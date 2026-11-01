@@ -314,38 +314,25 @@ function comboEditor(slot, own) {
   const input = h("input", { type: "text", value: own.keys || "", placeholder: "Ctrl+Shift+S", oninput: (e) => { own.keys = e.target.value; setOwn(slot, scope, own); input.classList.toggle("bad", !parseCombo(e.target.value)); },
     onblur: (e) => { const c = parseCombo(e.target.value); if (c) { own.keys = c; setOwn(slot, scope, own); renderView(); } } });
   const cap = h("button", { class: "keycap" + (capture ? " listen" : ""), onclick: () => startCapture(slot, own) },
-    capture ? L("Нажмите сочетание…", "Press the combination…") : L("Записать с клавиатуры", "Record from keyboard"));
+    capture ? L("Нажмите сочетание… (Esc — отмена)", "Press the combination… (Esc cancels)") : L("Записать с клавиатуры", "Record from keyboard"));
   wrap.append(input, cap);
   const q = h("div", { class: "quick" }, ...QUICK.map((k) => h("button", { onclick: () => { own.keys = k; setOwn(slot, scope, own); renderView(); } }, k)));
-  return h("div", {}, wrap, h("div", { class: "sub" }, q, h("div", { class: "muted small" }, L("Сочетания с Win лучше выбирать кнопками или вписывать: Windows перехватывает их раньше окна.",
-    "Win combinations are best picked or typed: Windows grabs them before the window sees them."))));
+  return h("div", {}, wrap, h("div", { class: "sub" }, q, h("div", { class: "muted small" }, L("Пока идёт запись, Windows не реагирует на нажатия, поэтому можно записывать и Ctrl+Win+стрелки, и Alt+Tab.",
+    "While recording, Windows ignores the keys, so Ctrl+Win+arrows and Alt+Tab can be recorded too."))));
 }
 
-function startCapture(slot, own) {
-  capture = { slot, mods: new Set() };
+// The combination is captured by the app's own keyboard hook: the window
+// cannot see Win combinations (Windows acts on Ctrl+Win+arrows first).
+async function startCapture(slot, own) {
+  if (capture) return;
+  capture = { slot };
   renderView();
-  const modOf = { ControlLeft: "Ctrl", ControlRight: "Ctrl", ShiftLeft: "Shift", ShiftRight: "Shift", AltLeft: "Alt", AltRight: "Alt", MetaLeft: "Win", MetaRight: "Win" };
-  const finish = (combo) => {
-    window.removeEventListener("keydown", down, true);
-    window.removeEventListener("keyup", up, true);
-    capture = null;
-    if (combo) { own.keys = combo; setOwn(slot, scope, own); }
-    renderView();
-  };
-  const down = (e) => {
-    e.preventDefault(); e.stopPropagation();
-    if (e.code === "Escape" && capture.mods.size === 0) return finish(null);
-    if (modOf[e.code]) { capture.mods.add(modOf[e.code]); return; }
-    const k = S.keys.find((x) => x.code === e.code);
-    if (!k) return;
-    finish(parseCombo([...capture.mods, k.name].join("+")));
-  };
-  const up = (e) => {
-    e.preventDefault();
-    if (modOf[e.code] && capture && capture.mods.size) finish(parseCombo([...capture.mods].join("+")));
-  };
-  window.addEventListener("keydown", down, true);
-  window.addEventListener("keyup", up, true);
+  try {
+    const r = await api("capture", {});
+    if (r.keys) { own.keys = r.keys; setOwn(slot, scope, own); }
+  } catch (e) { toast(e.message, true); }
+  capture = null;
+  renderView();
 }
 
 // ---------------------------------------------------------------------------
@@ -459,14 +446,17 @@ function renderChatter(v) {
   const c = D.settings.chatter;
   const st = S.status;
   const num = (k, text, hint) => h("div", { class: "field" }, h("span", {}, text),
-    h("input", { type: "number", min: 0, max: 250, value: c[k], onchange: (e) => { c[k] = Math.max(0, Math.round(+e.target.value || 0)); markDirty(); } }), h("span", { class: "small muted" }, hint));
+    h("input", { type: "number", min: 0, max: 1000, value: c[k], onchange: (e) => { c[k] = Math.max(0, Math.round(+e.target.value || 0)); markDirty(); } }), h("span", { class: "small muted" }, hint));
   v.append(h("div", { class: "card" }, h("h2", {}, L("Фильтр дребезга левой кнопки", "Left-button chatter filter")),
     h("p", { class: "muted small" }, L("Изношенная кнопка превращает одно нажатие в два-три. Фильтр ненадолго придерживает отпускание кнопки: если сразу за ним приходит новое нажатие, это дребезг, и программа видит одно нажатие. Перетаскивание не обрывается.",
       "A worn switch turns one press into two or three. The filter holds back each release briefly: if a new press follows right away, it is a bounce and programs see one press. Drags do not break.")),
     h("label", { class: "check" }, h("input", { type: "checkbox", checked: c.enabled, onchange: (e) => { c.enabled = e.target.checked; markDirty(); } }), h("span", {}, L("Включить фильтр", "Enable the filter"))),
     h("div", { class: "row" }, num("t", L("Пауза T, мс", "Gap T, ms"), L("короче — дребезг", "shorter = bounce")),
       num("h", L("Нажатие H, мс", "Press H, ms"), L("короче — обрывок", "shorter = fragment")),
-      num("g", L("Пауза G, мс", "Gap G, ms"), L("после обрывка", "after a fragment"))),
+      num("g", L("Пауза G, мс", "Gap G, ms"), L("после обрывка", "after a fragment")),
+      num("d", L("Перетаскивание D, мс", "Drag D, ms"), L("пропадание контакта при движении", "contact drop while moving"))),
+    h("p", { class: "muted small" }, L("T, H, G подбираются калибровкой по кликам. D действует, только когда курсор двигается с нажатой кнопкой: отпускание в конце перетаскивания приходит на D позже, зато случайный обрыв контакта короче D объект не роняет. Если перетаскивание всё ещё рвётся — увеличьте D.",
+      "T, H and G come from the click calibration. D applies only while the cursor moves with the button held: the release at the end of a drag arrives D later, but a contact drop shorter than D does not drop the object. If drags still break, increase D.")),
     h("p", { class: "muted small" }, c.calibrated && !c.calibrated.startsWith("0001") ? L("Последняя калибровка: ", "Last calibration: ") + new Date(c.calibrated).toLocaleString() + (c.score ? " — " + c.score : "") : L("Калибровка ещё не проводилась.", "Not calibrated yet.")),
     st.presses ? h("p", { class: "muted small" }, L("С запуска: нажатий ", "Since start: presses ") + st.presses + L(", убрано дребезга ", ", bounces removed ") + st.merged) : null));
   v.append(renderWizard());

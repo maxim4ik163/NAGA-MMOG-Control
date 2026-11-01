@@ -187,7 +187,7 @@ func (a *API) handle(path string, body json.RawMessage) (any, error) {
 			return nil, err
 		}
 		a.store.mu.Lock()
-		d.Version = 1
+		d.Version = dataVersion
 		a.store.data = &d
 		err := a.store.save()
 		a.store.mu.Unlock()
@@ -233,6 +233,13 @@ func (a *API) handle(path string, body json.RawMessage) (any, error) {
 	case "calib/stop":
 		a.eng.calibStop()
 		return a.state(), nil
+
+	case "capture":
+		combo, err := hook.captureCombo(15 * time.Second)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]string{"keys": combo}, nil
 
 	case "calib/reset":
 		var v struct {

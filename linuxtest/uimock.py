@@ -44,6 +44,8 @@ class H(SimpleHTTPRequestHandler):
             ph = status["calibPhase"]; status["calibPhase"] = ""
             status["calibSingle" if ph == "single" else "calibDouble"] = 21 if ph == "single" else 34
             return self.send_json(state)
+        if p == "/api/capture":
+            time.sleep(0.5); return self.send_json({"keys": "Ctrl+Win+Right"})
         if p == "/api/calib/reset":
             status["calibPhase"] = ""
             ph = (body or {}).get("phase", "")

@@ -77,6 +77,10 @@ type Chatter struct {
 	T int `json:"t"`
 	H int `json:"h"`
 	G int `json:"g"`
+	// D: while the cursor moves with the button held (a drag), a release is
+	// held back this long. Ending a drag a little later is harmless, and
+	// contact drops under load can be much longer than click bounces.
+	D int `json:"d"`
 	// Calibrated is the time of the last calibration (zero = never).
 	Calibrated time.Time `json:"calibrated"`
 	Score      string    `json:"score,omitempty"` // e.g. "singles 14/15, doubles 9/10"
@@ -124,6 +128,9 @@ type Settings struct {
 	Debug    bool   `json:"debug"`
 }
 
+// dataVersion 2 added Chatter.D.
+const dataVersion = 2
+
 type Data struct {
 	Version  int        `json:"version"`
 	Profiles []*Profile `json:"profiles"`
@@ -144,13 +151,13 @@ func defaultPopup() PopupStyle {
 
 func defaultData() *Data {
 	return &Data{
-		Version: 1,
+		Version: dataVersion,
 		Settings: Settings{
 			Global:     map[string]Binding{},
 			DPI:        DPISet{Stages: []int{800, 1400, 2400, 3600}, Start: 1},
 			PollRate:   1000,
 			LightWheel: true, LightLogo: true, LightPad: true,
-			Chatter: Chatter{T: 45, H: 15, G: 100},
+			Chatter: Chatter{T: 45, H: 15, G: 100, D: 250},
 			OSDDPI:  true, OSDProfile: true,
 			Popup:     defaultPopup(),
 			KeyRepeat: true,
@@ -287,7 +294,7 @@ func validateSettings(s *Settings) error {
 		return errors.New(T("частота опроса: 125, 500 или 1000 Гц", "polling rate must be 125, 500 or 1000 Hz"))
 	}
 	c := &s.Chatter
-	c.T, c.H, c.G = clampInt(c.T, 0, 150), clampInt(c.H, 0, 60), clampInt(c.G, 0, 250)
+	c.T, c.H, c.G, c.D = clampInt(c.T, 0, 150), clampInt(c.H, 0, 60), clampInt(c.G, 0, 250), clampInt(c.D, 0, 1000)
 	if c.G < c.T {
 		c.G = c.T
 	}
@@ -375,6 +382,10 @@ func loadStore(dir string) *Store {
 	if b, err := os.ReadFile(filepath.Join(dir, "data.json")); err == nil {
 		d := defaultData()
 		if err := json.Unmarshal(b, d); err == nil {
+			if d.Version < 2 {
+				d.Settings.Chatter.D = 250
+			}
+			d.Version = dataVersion
 			if err := validateData(d); err == nil {
 				s.data = d
 			} else {

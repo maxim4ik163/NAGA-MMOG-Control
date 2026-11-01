@@ -21,7 +21,7 @@ import (
 // drags intact: a bounce in the middle of a drag never drops the object.
 
 type chatterParams struct {
-	T, H, G time.Duration
+	T, H, G, D time.Duration
 }
 
 func (c Chatter) params() chatterParams {
@@ -29,6 +29,7 @@ func (c Chatter) params() chatterParams {
 		T: time.Duration(c.T) * time.Millisecond,
 		H: time.Duration(c.H) * time.Millisecond,
 		G: time.Duration(c.G) * time.Millisecond,
+		D: time.Duration(c.D) * time.Millisecond,
 	}
 }
 
@@ -49,6 +50,7 @@ type chatterFilter struct {
 	on        bool
 	lastDown  time.Duration // time of the last physical press (merged or not)
 	pending   bool          // a release is being held back
+	dragging  bool          // the cursor moved while the button was held
 	gen       int           // invalidates scheduled releases
 	emitUp    func()        // sends the held-back release (SendInput)
 	after     func(d time.Duration, f func())
@@ -75,6 +77,9 @@ func (f *chatterFilter) down(now time.Duration) bool {
 	defer f.mu.Unlock()
 	f.seenDowns++
 	f.lastDown = now
+	if !f.pending {
+		f.dragging = false // a new press starts; a merged bounce keeps the drag
+	}
 	if f.pending {
 		// bounce: the application still sees the button down
 		f.pending = false
@@ -94,6 +99,9 @@ func (f *chatterFilter) up(now time.Duration) bool {
 		return true
 	}
 	w := f.p.wait(now - f.lastDown)
+	if f.dragging && f.p.D > w {
+		w = f.p.D
+	}
 	if w <= 0 {
 		f.mu.Unlock()
 		return true
@@ -114,6 +122,14 @@ func (f *chatterFilter) up(now time.Duration) bool {
 		}
 	})
 	return false
+}
+
+// setDragging marks the current press as a drag (called by the hook when
+// the cursor has moved far enough with the button held).
+func (f *chatterFilter) setDragging() {
+	f.mu.Lock()
+	f.dragging = true
+	f.mu.Unlock()
 }
 
 // flush sends a held-back release now (filter switched off, app exiting).
@@ -227,7 +243,7 @@ func fitChatter(single, double []clickEvent) calibResult {
 				if H == 0 && G != 0 || H != 0 && (G == 0 || G < T) {
 					continue // rule B needs both H and G; without it G is unused
 				}
-				p := chatterParams{time.Duration(T) * time.Millisecond, time.Duration(H) * time.Millisecond, time.Duration(G) * time.Millisecond}
+				p := chatterParams{T: time.Duration(T) * time.Millisecond, H: time.Duration(H) * time.Millisecond, G: time.Duration(G) * time.Millisecond}
 				s1, n1 := countSize(groups(simulate(single, p)), 1)
 				s2, n2 := countSize(groups(simulate(double, p)), 2)
 				score := s1 + s2

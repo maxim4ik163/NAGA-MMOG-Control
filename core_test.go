@@ -267,3 +267,66 @@ func TestTrimRecording(t *testing.T) {
 		t.Fatalf("keep last group: %d", len(got))
 	}
 }
+
+func TestChatterDrag(t *testing.T) {
+	var timers []fakeTimer
+	now := time.Duration(0)
+	ups := 0
+	f := newChatterFilter(func() { ups++ }, func(d time.Duration, fn func()) { timers = append(timers, fakeTimer{now + d, fn}) })
+	f.set(true, Chatter{T: 45, H: 15, G: 100, D: 250}.params())
+	run := func(to time.Duration) {
+		now = to
+		var rest []fakeTimer
+		for _, tm := range timers {
+			if tm.at <= now {
+				tm.f()
+			} else {
+				rest = append(rest, tm)
+			}
+		}
+		timers = rest
+	}
+	ms := time.Millisecond
+	f.down(0)
+	f.setDragging()
+	run(800 * ms)
+	f.up(800 * ms) // contact drop mid-drag
+	run(950 * ms)  // 150 ms later: longer than T and G, shorter than D
+	if f.down(950 * ms) {
+		t.Fatal("drag drop of 150 ms not merged")
+	}
+	run(2000 * ms)
+	f.up(2000 * ms) // real end of the drag
+	run(2200 * ms)
+	if ups != 0 {
+		t.Fatal("released too early")
+	}
+	run(2260 * ms)
+	if ups != 1 {
+		t.Fatalf("drag end not sent: %d", ups)
+	}
+	// a new click is no longer a drag: short window again
+	f.down(3000 * ms)
+	run(3080 * ms)
+	f.up(3080 * ms)
+	run(3130 * ms)
+	if ups != 2 {
+		t.Fatalf("click release delayed like a drag: %d", ups)
+	}
+}
+
+func TestDragDefaultAndMigration(t *testing.T) {
+	if defaultData().Settings.Chatter.D != 250 {
+		t.Fatal("default D")
+	}
+	dir := t.TempDir()
+	old := `{"version":1,"profiles":[],"settings":{"global":{},"dpi":{"stages":[800],"start":0},"pollRate":1000,"chatter":{"enabled":true,"t":45,"h":30,"g":100}}}`
+	if err := os.WriteFile(dir+"/data.json", []byte(old), 0644); err != nil {
+		t.Fatal(err)
+	}
+	s := loadStore(dir)
+	c := s.data.Settings.Chatter
+	if c.D != 250 || c.H != 30 || !c.Enabled || s.data.Version != dataVersion {
+		t.Fatalf("migration: %+v v%d", c, s.data.Version)
+	}
+}
