@@ -1,0 +1,500 @@
+Naga hook probe v2. 2026-11-01 15:30:10
+
+== Phase 1 (20 s): which keyboard? Nothing is blocked.
+Switch the Naga to 123. Press Naga side buttons 1, 2, 3, then the keys
+1, 2, 3 on your main keyboard, then a few Naga buttons again.
+   4116.294 ms  t=321354531  HOOK key 1C up       at hook: none pending
+   4116.294 ms  t=321354531  RAW  key 1C up       dev=VID_258A&PID_010C&MI_00
+   7428.134 ms  t=321357843  RAW  L down          dev=VID_1532&PID_0015&MI_00
+   7428.134 ms  t=321357843  HOOK L down          at hook: none pending
+   7472.094 ms  t=321357890  RAW  L up            dev=VID_1532&PID_0015&MI_00
+   7472.094 ms  t=321357890  HOOK L up            at hook: none pending
+   7506.042 ms  t=321357921  RAW  L down          dev=VID_1532&PID_0015&MI_00
+   7506.042 ms  t=321357921  HOOK L down          at hook: none pending
+   7536.131 ms  t=321357953  RAW  L up            dev=VID_1532&PID_0015&MI_00
+   7536.131 ms  t=321357953  HOOK L up            at hook: none pending
+   7916.000 ms  t=321358343  HOOK key 02 down     at hook: none pending
+   7916.723 ms  t=321358343  RAW  key 02 down     dev=VID_1532&PID_0015&MI_01
+   8045.826 ms  t=321358468  HOOK key 02 up       at hook: none pending
+   8047.245 ms  t=321358468  RAW  key 02 up       dev=VID_1532&PID_0015&MI_01
+   8384.888 ms  t=321358812  HOOK key 03 down     at hook: none pending
+   8385.233 ms  t=321358812  RAW  key 03 down     dev=VID_1532&PID_0015&MI_01
+   8515.971 ms  t=321358937  HOOK key 03 up       at hook: none pending
+   8516.491 ms  t=321358937  RAW  key 03 up       dev=VID_1532&PID_0015&MI_01
+   8746.115 ms  t=321359171  HOOK key 04 down     at hook: none pending
+   8746.115 ms  t=321359171  RAW  key 04 down     dev=VID_1532&PID_0015&MI_01
+   8909.287 ms  t=321359328  HOOK key 04 up       at hook: none pending
+   8910.227 ms  t=321359328  RAW  key 04 up       dev=VID_1532&PID_0015&MI_01
+   9204.111 ms  t=321359625  HOOK key 02 down     at hook: none pending
+   9204.111 ms  t=321359625  RAW  key 02 down     dev=VID_1532&PID_0015&MI_01
+   9325.033 ms  t=321359750  HOOK key 02 up       at hook: none pending
+   9325.552 ms  t=321359750  RAW  key 02 up       dev=VID_1532&PID_0015&MI_01
+   9509.296 ms  t=321359937  HOOK key 03 down     at hook: none pending
+   9510.297 ms  t=321359937  RAW  key 03 down     dev=VID_1532&PID_0015&MI_01
+   9652.105 ms  t=321360078  HOOK key 03 up       at hook: none pending
+   9652.105 ms  t=321360078  RAW  key 03 up       dev=VID_1532&PID_0015&MI_01
+   9804.754 ms  t=321360218  HOOK key 04 down     at hook: none pending
+   9805.264 ms  t=321360218  RAW  key 04 down     dev=VID_1532&PID_0015&MI_01
+   9947.102 ms  t=321360375  HOOK key 04 up       at hook: none pending
+   9947.102 ms  t=321360375  RAW  key 04 up       dev=VID_1532&PID_0015&MI_01
+  10900.522 ms  t=321361328  HOOK key 02 down     at hook: none pending
+  10901.159 ms  t=321361328  RAW  key 02 down     dev=VID_258A&PID_010C&MI_00
+  11096.450 ms  t=321361515  HOOK key 03 down     at hook: none pending
+  11096.967 ms  t=321361515  RAW  key 03 down     dev=VID_258A&PID_010C&MI_00
+  11248.089 ms  t=321361671  HOOK key 02 up       at hook: none pending
+  11248.089 ms  t=321361671  RAW  key 02 up       dev=VID_258A&PID_010C&MI_00
+  11324.516 ms  t=321361750  HOOK key 04 down     at hook: none pending
+  11324.516 ms  t=321361750  RAW  key 04 down     dev=VID_258A&PID_010C&MI_00
+  11382.516 ms  t=321361796  HOOK key 03 up       at hook: none pending
+  11382.516 ms  t=321361796  RAW  key 03 up       dev=VID_258A&PID_010C&MI_00
+  11484.134 ms  t=321361906  HOOK key 04 up       at hook: none pending
+  11484.134 ms  t=321361906  RAW  key 04 up       dev=VID_258A&PID_010C&MI_00
+  11929.246 ms  t=321362343  HOOK key 02 down     at hook: none pending
+  11930.145 ms  t=321362343  RAW  key 02 down     dev=VID_258A&PID_010C&MI_00
+  12036.691 ms  t=321362453  HOOK key 03 down     at hook: none pending
+  12037.581 ms  t=321362453  RAW  key 03 down     dev=VID_258A&PID_010C&MI_00
+  12153.535 ms  t=321362578  HOOK key 02 up       at hook: none pending
+  12153.535 ms  t=321362578  RAW  key 02 up       dev=VID_258A&PID_010C&MI_00
+  12160.675 ms  t=321362578  HOOK key 04 down     at hook: none pending
+  12161.578 ms  t=321362578  RAW  key 04 down     dev=VID_258A&PID_010C&MI_00
+  12210.587 ms  t=321362625  HOOK key 03 up       at hook: none pending
+  12211.588 ms  t=321362625  RAW  key 03 up       dev=VID_258A&PID_010C&MI_00
+  12279.374 ms  t=321362703  HOOK key 04 up       at hook: none pending
+  12279.374 ms  t=321362703  RAW  key 04 up       dev=VID_258A&PID_010C&MI_00
+  13560.063 ms  t=321363984  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  13560.063 ms  t=321363984  HOOK L down          at hook: none pending
+  13563.830 ms  t=321363984  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  13564.353 ms  t=321363984  HOOK L up            at hook: none pending
+  13567.994 ms  t=321363984  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  13567.994 ms  t=321363984  HOOK L down          at hook: none pending
+  13624.946 ms  t=321364046  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  13624.946 ms  t=321364046  HOOK L up            at hook: none pending
+  14855.922 ms  t=321365281  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  14855.922 ms  t=321365281  HOOK L down          at hook: none pending
+  14936.174 ms  t=321365359  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  14937.147 ms  t=321365359  HOOK L up            at hook: none pending
+  15105.850 ms  t=321365531  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  15107.157 ms  t=321365531  HOOK L down          at hook: none pending
+  15168.219 ms  t=321365593  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  15168.219 ms  t=321365593  HOOK L up            at hook: none pending
+  16467.160 ms  t=321366890  HOOK key 02 down     at hook: none pending
+  16468.637 ms  t=321366890  RAW  key 02 down     dev=VID_1532&PID_0015&MI_01
+  16598.208 ms  t=321367015  HOOK key 02 up       at hook: none pending
+  16599.617 ms  t=321367015  RAW  key 02 up       dev=VID_1532&PID_0015&MI_01
+  16850.039 ms  t=321367265  HOOK key 03 down     at hook: none pending
+  16850.600 ms  t=321367265  RAW  key 03 down     dev=VID_1532&PID_0015&MI_01
+  16959.432 ms  t=321367375  HOOK key 03 up       at hook: none pending
+  16959.432 ms  t=321367375  RAW  key 03 up       dev=VID_1532&PID_0015&MI_01
+  17112.157 ms  t=321367531  HOOK key 04 down     at hook: none pending
+  17113.606 ms  t=321367531  RAW  key 04 down     dev=VID_1532&PID_0015&MI_01
+  17265.020 ms  t=321367687  HOOK key 04 up       at hook: none pending
+  17265.627 ms  t=321367687  RAW  key 04 up       dev=VID_1532&PID_0015&MI_01
+  17692.415 ms  t=321368109  HOOK key 02 down     at hook: none pending
+  17693.040 ms  t=321368109  RAW  key 02 down     dev=VID_258A&PID_010C&MI_00
+  17820.204 ms  t=321368234  HOOK key 03 down     at hook: none pending
+  17820.204 ms  t=321368234  RAW  key 03 down     dev=VID_258A&PID_010C&MI_00
+  18016.138 ms  t=321368437  HOOK key 04 down     at hook: none pending
+  18017.055 ms  t=321368437  RAW  key 04 down     dev=VID_258A&PID_010C&MI_00
+  18020.168 ms  t=321368437  HOOK key 02 up       at hook: none pending
+  18020.684 ms  t=321368437  RAW  key 02 up       dev=VID_258A&PID_010C&MI_00
+  18070.327 ms  t=321368484  HOOK key 03 up       at hook: none pending
+  18070.847 ms  t=321368484  RAW  key 03 up       dev=VID_258A&PID_010C&MI_00
+  18176.136 ms  t=321368593  HOOK key 04 up       at hook: none pending
+  18177.035 ms  t=321368593  RAW  key 04 up       dev=VID_258A&PID_010C&MI_00
+  hook events: device known at hook time 0, unknown 49
+
+== Phase 2 (15 s): the key "1" is BLOCKED from every keyboard.
+Press Naga side button 1 a few times and the main keyboard 1 a few times.
+Nothing will be typed; that is expected. Everything returns to normal after 15 s.
+  30838.237 ms  t=321381265  HOOK key 1C up       at hook: none pending
+  30838.855 ms  t=321381265  RAW  key 1C up       dev=VID_258A&PID_010C&MI_00
+  32207.944 ms  t=321382625  HOOK key 02 down     at hook: none pending  [BLOCKED]
+  32315.692 ms  t=321382734  HOOK key 02 up       at hook: none pending  [BLOCKED]
+  32414.849 ms  t=321382843  HOOK key 02 down     at hook: none pending  [BLOCKED]
+  32513.024 ms  t=321382937  HOOK key 02 up       at hook: none pending  [BLOCKED]
+  32600.024 ms  t=321383015  HOOK key 02 down     at hook: none pending  [BLOCKED]
+  32665.973 ms  t=321383093  HOOK key 02 up       at hook: none pending  [BLOCKED]
+  32775.719 ms  t=321383203  HOOK key 02 down     at hook: none pending  [BLOCKED]
+  32862.082 ms  t=321383281  HOOK key 02 up       at hook: none pending  [BLOCKED]
+  32950.844 ms  t=321383375  HOOK key 02 down     at hook: none pending  [BLOCKED]
+  33037.842 ms  t=321383453  HOOK key 02 up       at hook: none pending  [BLOCKED]
+  33124.498 ms  t=321383546  HOOK key 02 down     at hook: none pending  [BLOCKED]
+  33212.498 ms  t=321383640  HOOK key 02 up       at hook: none pending  [BLOCKED]
+  33288.189 ms  t=321383703  HOOK key 02 down     at hook: none pending  [BLOCKED]
+  33387.497 ms  t=321383812  HOOK key 02 up       at hook: none pending  [BLOCKED]
+  34701.059 ms  t=321385125  HOOK key 02 down     at hook: none pending  [BLOCKED]
+  34790.330 ms  t=321385218  HOOK key 02 up       at hook: none pending  [BLOCKED]
+  34886.876 ms  t=321385312  HOOK key 02 down     at hook: none pending  [BLOCKED]
+  34976.894 ms  t=321385390  HOOK key 02 up       at hook: none pending  [BLOCKED]
+  35054.869 ms  t=321385468  HOOK key 02 down     at hook: none pending  [BLOCKED]
+  35139.239 ms  t=321385562  HOOK key 02 up       at hook: none pending  [BLOCKED]
+  35227.173 ms  t=321385656  HOOK key 02 down     at hook: none pending  [BLOCKED]
+  35304.522 ms  t=321385718  HOOK key 02 up       at hook: none pending  [BLOCKED]
+  35349.172 ms  t=321385765  HOOK key 02 down     at hook: none pending  [BLOCKED]
+  35443.171 ms  t=321385859  HOOK key 02 up       at hook: none pending  [BLOCKED]
+  35510.714 ms  t=321385937  HOOK key 02 down     at hook: none pending  [BLOCKED]
+  35615.169 ms  t=321386031  HOOK key 02 up       at hook: none pending  [BLOCKED]
+  35695.167 ms  t=321386109  HOOK key 02 down     at hook: none pending  [BLOCKED]
+  35791.067 ms  t=321386218  HOOK key 02 up       at hook: none pending  [BLOCKED]
+  35865.164 ms  t=321386281  HOOK key 02 down     at hook: none pending  [BLOCKED]
+  35963.993 ms  t=321386390  HOOK key 02 up       at hook: none pending  [BLOCKED]
+  hook events: device known at hook time 0, unknown 31
+
+== Phase 3 (20 s): single clicks.
+Click the left button ONCE at a time, slowly (about one click per second),
+15 times. Click on an empty spot (desktop or this window's title).
+  -- left button, single clicks
+  press  1  
+           held for   32.2 ms
+  press  2  released for   40.7 ms  <-- possible chatter
+           held for   34.2 ms
+  press  3  released for 1133.9 ms
+           held for   51.0 ms
+  press  4  released for   34.9 ms  <-- possible chatter
+           held for   32.3 ms
+  press  5  released for 1277.3 ms
+           held for   14.6 ms  <-- very short
+  press  6  released for   64.1 ms  <-- possible chatter
+           held for   27.1 ms
+  press  7  released for 1229.0 ms
+           held for    9.9 ms  <-- very short
+  press  8  released for   10.9 ms  <-- possible chatter
+           held for   85.1 ms
+  press  9  released for 1377.0 ms
+           held for   83.8 ms
+  press 10  released for 1150.0 ms
+           held for  110.1 ms
+  press 11  released for 1162.9 ms
+           held for   88.1 ms
+  press 12  released for 1130.0 ms
+           held for   93.0 ms
+  press 13  released for 1078.1 ms
+           held for    4.7 ms  <-- very short
+  press 14  released for    6.2 ms  <-- possible chatter
+           held for   12.7 ms  <-- very short
+  press 15  released for   81.2 ms
+           held for   39.8 ms
+  press 16  released for 1181.3 ms
+           held for   74.9 ms
+  press 17  released for 1199.0 ms
+           held for   89.9 ms
+  press 18  released for 1047.0 ms
+           held for   25.1 ms
+  press 19  released for   52.9 ms  <-- possible chatter
+           held for   50.0 ms
+  press 20  released for 1160.1 ms
+           held for  100.0 ms
+  press 21  released for 1110.9 ms
+           held for  114.1 ms
+  press 22  released for 1171.8 ms
+           held for   89.1 ms
+
+== Phase 4 (20 s): double clicks.
+Double-click the way you normally do, 8 times, pausing a second between them.
+  -- left button, double clicks
+  press  1  
+           held for   13.1 ms  <-- very short
+  press  2  released for   11.9 ms  <-- possible chatter
+           held for   32.0 ms
+  press  3  released for   78.0 ms  <-- possible chatter
+           held for    6.9 ms  <-- very short
+  press  4  released for   41.3 ms  <-- possible chatter
+           held for    4.6 ms  <-- very short
+  press  5  released for   19.2 ms  <-- possible chatter
+           held for   18.2 ms  <-- very short
+  press  6  released for  758.7 ms
+           held for   74.1 ms
+  press  7  released for   61.2 ms  <-- possible chatter
+           held for    8.8 ms  <-- very short
+  press  8  released for   27.1 ms  <-- possible chatter
+           held for   17.0 ms  <-- very short
+  press  9  released for   19.1 ms  <-- possible chatter
+           held for   28.8 ms
+  press 10  released for  662.1 ms
+           held for   64.9 ms
+  press 11  released for   76.0 ms  <-- possible chatter
+           held for    7.1 ms  <-- very short
+  press 12  released for   55.9 ms  <-- possible chatter
+           held for   25.9 ms
+  press 13  released for  674.2 ms
+           held for   68.6 ms
+  press 14  released for   72.4 ms  <-- possible chatter
+           held for    7.7 ms  <-- very short
+  press 15  released for   61.1 ms  <-- possible chatter
+           held for   29.0 ms
+  press 16  released for  740.1 ms
+           held for   53.7 ms
+  press 17  released for   87.1 ms
+           held for   79.1 ms
+  press 18  released for  656.0 ms
+           held for   72.8 ms
+  press 19  released for   68.0 ms  <-- possible chatter
+           held for    6.9 ms  <-- very short
+  press 20  released for   11.8 ms  <-- possible chatter
+           held for   96.5 ms
+  press 21  released for  663.9 ms
+           held for   79.0 ms
+  press 22  released for   66.2 ms  <-- possible chatter
+           held for   32.9 ms
+  press 23  released for   30.1 ms  <-- possible chatter
+           held for   49.7 ms
+  press 24  released for  645.0 ms
+           held for    6.1 ms  <-- very short
+  press 25  released for   14.1 ms  <-- possible chatter
+           held for   60.0 ms
+  press 26  released for   48.8 ms  <-- possible chatter
+           held for   23.0 ms
+  press 27  released for   46.0 ms  <-- possible chatter
+           held for   40.1 ms
+  press 28  released for 4765.8 ms
+           held for   58.0 ms
+  press 29  released for   92.0 ms
+           held for   56.0 ms
+  press 30  released for 2536.1 ms
+           held for   78.9 ms
+  press 31  released for   55.1 ms  <-- possible chatter
+           held for    7.1 ms  <-- very short
+  press 32  released for   22.8 ms  <-- possible chatter
+           held for    8.1 ms  <-- very short
+  press 33  released for   11.1 ms  <-- possible chatter
+           held for   26.8 ms
+  press 34  released for    4.0 ms  <-- possible chatter
+           held for   31.0 ms
+
+== Anti-chatter calibration
+  phase 3: 22 presses reported, 7 of them were chatter
+  chatter releases, ms: 6.2 10.9 34.9 40.7 52.9 64.1 81.2
+  phase 4: no intentional double-click gaps recognised
+  suggested threshold: ignore a press if the button was released less than 122 ms ago
+
+== Raw timelines of phases 3 and 4
+  57161.860 ms  t=321407578  HOOK key 1C up       at hook: none pending
+  57162.480 ms  t=321407578  RAW  key 1C up       dev=VID_258A&PID_010C&MI_00
+  59002.551 ms  t=321409421  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  59002.551 ms  t=321409421  HOOK L down          at hook: none pending
+  59034.762 ms  t=321409453  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  59034.762 ms  t=321409453  HOOK L up            at hook: none pending
+  59075.423 ms  t=321409500  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  59075.423 ms  t=321409500  HOOK L down          at hook: none pending
+  59109.143 ms  t=321409531  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  59109.666 ms  t=321409531  HOOK L up            at hook: none pending
+  60243.538 ms  t=321410671  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  60243.538 ms  t=321410671  HOOK L down          at hook: none pending
+  60294.497 ms  t=321410718  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  60294.497 ms  t=321410718  HOOK L up            at hook: none pending
+  60329.421 ms  t=321410750  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  60329.421 ms  t=321410750  HOOK L down          at hook: none pending
+  60360.851 ms  t=321410781  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  60361.674 ms  t=321410781  HOOK L up            at hook: none pending
+  61638.950 ms  t=321412062  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  61638.950 ms  t=321412062  HOOK L down          at hook: none pending
+  61653.521 ms  t=321412078  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  61653.521 ms  t=321412078  HOOK L up            at hook: none pending
+  61716.915 ms  t=321412140  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  61717.609 ms  t=321412140  HOOK L down          at hook: none pending
+  61743.162 ms  t=321412171  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  61744.670 ms  t=321412171  HOOK L up            at hook: none pending
+  62972.953 ms  t=321413390  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  62973.688 ms  t=321413390  HOOK L down          at hook: none pending
+  62983.582 ms  t=321413406  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  62983.582 ms  t=321413406  HOOK L up            at hook: none pending
+  62994.495 ms  t=321413421  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  62994.495 ms  t=321413421  HOOK L down          at hook: none pending
+  63079.608 ms  t=321413500  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  63079.608 ms  t=321413500  HOOK L up            at hook: none pending
+  64456.650 ms  t=321414875  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  64456.650 ms  t=321414875  HOOK L down          at hook: none pending
+  64540.488 ms  t=321414968  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  64540.488 ms  t=321414968  HOOK L up            at hook: none pending
+  65690.476 ms  t=321416109  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  65690.476 ms  t=321416109  HOOK L down          at hook: none pending
+  65799.732 ms  t=321416218  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  65800.604 ms  t=321416218  HOOK L up            at hook: none pending
+  66963.545 ms  t=321417390  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  66963.545 ms  t=321417390  HOOK L down          at hook: none pending
+  67050.798 ms  t=321417468  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  67051.618 ms  t=321417468  HOOK L up            at hook: none pending
+  68181.161 ms  t=321418609  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  68181.586 ms  t=321418609  HOOK L down          at hook: none pending
+  68274.196 ms  t=321418703  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  68274.580 ms  t=321418703  HOOK L up            at hook: none pending
+  69352.667 ms  t=321419765  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  69352.667 ms  t=321419765  HOOK L down          at hook: none pending
+  69357.322 ms  t=321419781  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  69357.322 ms  t=321419781  HOOK L up            at hook: none pending
+  69363.039 ms  t=321419781  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  69363.560 ms  t=321419781  HOOK L down          at hook: none pending
+  69376.237 ms  t=321419796  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  69376.237 ms  t=321419796  HOOK L up            at hook: none pending
+  69457.468 ms  t=321419875  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  69457.468 ms  t=321419875  HOOK L down          at hook: none pending
+  69497.300 ms  t=321419921  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  69497.300 ms  t=321419921  HOOK L up            at hook: match from VID_1532&PID_0015&MI_00
+  70678.298 ms  t=321421093  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  70678.647 ms  t=321421093  HOOK L down          at hook: none pending
+  70752.868 ms  t=321421171  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  70753.576 ms  t=321421171  HOOK L up            at hook: none pending
+  71951.613 ms  t=321422375  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  71952.544 ms  t=321422375  HOOK L down          at hook: none pending
+  72042.403 ms  t=321422468  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  72042.403 ms  t=321422468  HOOK L up            at hook: none pending
+  73089.392 ms  t=321423515  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  73089.392 ms  t=321423515  HOOK L down          at hook: none pending
+  73114.141 ms  t=321423531  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  73114.517 ms  t=321423531  HOOK L up            at hook: none pending
+  73167.431 ms  t=321423593  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  73167.431 ms  t=321423593  HOOK L down          at hook: none pending
+  73217.390 ms  t=321423640  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  73217.390 ms  t=321423640  HOOK L up            at hook: none pending
+  74377.009 ms  t=321424796  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  74377.494 ms  t=321424796  HOOK L down          at hook: none pending
+  74476.676 ms  t=321424890  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  74477.487 ms  t=321424890  HOOK L up            at hook: none pending
+  75588.364 ms  t=321426015  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  75588.364 ms  t=321426015  HOOK L down          at hook: none pending
+  75701.632 ms  t=321426125  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  75702.481 ms  t=321426125  HOOK L up            at hook: none pending
+  76874.258 ms  t=321427296  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  76874.258 ms  t=321427296  HOOK L down          at hook: none pending
+  76963.348 ms  t=321427390  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  76963.348 ms  t=321427390  HOOK L up            at hook: none pending
+  ----
+  87164.126 ms  t=321437578  HOOK key 1C up       at hook: none pending
+  87165.154 ms  t=321437578  RAW  key 1C up       dev=VID_258A&PID_010C&MI_00
+  88916.213 ms  t=321439343  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  88916.213 ms  t=321439343  HOOK L down          at hook: none pending
+  88928.467 ms  t=321439343  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  88929.335 ms  t=321439343  HOOK L up            at hook: none pending
+  88941.213 ms  t=321439359  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  88941.213 ms  t=321439359  HOOK L down          at hook: none pending
+  88973.213 ms  t=321439390  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  88973.213 ms  t=321439390  HOOK L up            at hook: none pending
+  89051.213 ms  t=321439468  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  89051.213 ms  t=321439468  HOOK L down          at hook: none pending
+  89058.090 ms  t=321439484  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  89058.090 ms  t=321439484  HOOK L up            at hook: none pending
+  89099.364 ms  t=321439515  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  89099.364 ms  t=321439515  HOOK L down          at hook: none pending
+  89104.008 ms  t=321439531  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  89104.008 ms  t=321439531  HOOK L up            at hook: none pending
+  89123.211 ms  t=321439546  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  89123.211 ms  t=321439546  HOOK L down          at hook: none pending
+  89141.386 ms  t=321439562  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  89141.386 ms  t=321439562  HOOK L up            at hook: none pending
+  89900.081 ms  t=321440328  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  89900.081 ms  t=321440328  HOOK L down          at hook: none pending
+  89974.139 ms  t=321440390  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  89974.139 ms  t=321440390  HOOK L up            at hook: none pending
+  90035.349 ms  t=321440453  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  90035.349 ms  t=321440453  HOOK L down          at hook: none pending
+  90044.133 ms  t=321440468  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  90044.133 ms  t=321440468  HOOK L up            at hook: none pending
+  90071.200 ms  t=321440500  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  90071.200 ms  t=321440500  HOOK L down          at hook: none pending
+  90088.246 ms  t=321440515  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  90088.246 ms  t=321440515  HOOK L up            at hook: none pending
+  90107.349 ms  t=321440531  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  90107.349 ms  t=321440531  HOOK L down          at hook: none pending
+  90136.199 ms  t=321440562  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  90136.199 ms  t=321440562  HOOK L up            at hook: none pending
+  90798.318 ms  t=321441218  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  90798.318 ms  t=321441218  HOOK L down          at hook: none pending
+  90863.173 ms  t=321441281  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  90863.173 ms  t=321441281  HOOK L up            at hook: none pending
+  90939.190 ms  t=321441359  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  90939.190 ms  t=321441359  HOOK L down          at hook: none pending
+  90945.769 ms  t=321441359  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  90946.287 ms  t=321441359  HOOK L up            at hook: none pending
+  91002.190 ms  t=321441421  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  91002.190 ms  t=321441421  HOOK L down          at hook: none pending
+  91028.097 ms  t=321441453  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  91028.097 ms  t=321441453  HOOK L up            at hook: none pending
+  91702.317 ms  t=321442125  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  91702.317 ms  t=321442125  HOOK L down          at hook: none pending
+  91770.950 ms  t=321442187  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  91770.950 ms  t=321442187  HOOK L up            at hook: none pending
+  91842.511 ms  t=321442265  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  91843.331 ms  t=321442265  HOOK L down          at hook: none pending
+  91851.061 ms  t=321442265  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  91851.061 ms  t=321442265  HOOK L up            at hook: none pending
+  91912.179 ms  t=321442328  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  91912.179 ms  t=321442328  HOOK L down          at hook: none pending
+  91941.159 ms  t=321442359  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  91941.159 ms  t=321442359  HOOK L up            at hook: none pending
+  92680.557 ms  t=321443109  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  92681.308 ms  t=321443109  HOOK L down          at hook: none pending
+  92735.043 ms  t=321443156  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  92735.043 ms  t=321443156  HOOK L up            at hook: none pending
+  92822.171 ms  t=321443250  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  92822.171 ms  t=321443250  HOOK L down          at hook: none pending
+  92900.645 ms  t=321443328  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  92901.288 ms  t=321443328  HOOK L up            at hook: none pending
+  93557.332 ms  t=321443984  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  93557.332 ms  t=321443984  HOOK L down          at hook: none pending
+  93630.160 ms  t=321444046  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  93630.160 ms  t=321444046  HOOK L up            at hook: none pending
+  93698.159 ms  t=321444125  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  93698.159 ms  t=321444125  HOOK L down          at hook: none pending
+  93705.033 ms  t=321444125  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  93705.033 ms  t=321444125  HOOK L up            at hook: none pending
+  93716.799 ms  t=321444140  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  93716.799 ms  t=321444140  HOOK L down          at hook: none pending
+  93812.317 ms  t=321444234  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  93813.277 ms  t=321444234  HOOK L up            at hook: none pending
+  94477.150 ms  t=321444906  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  94477.150 ms  t=321444906  HOOK L down          at hook: none pending
+  94556.149 ms  t=321444984  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  94556.149 ms  t=321444984  HOOK L up            at hook: none pending
+  94621.976 ms  t=321445046  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  94622.312 ms  t=321445046  HOOK L down          at hook: none pending
+  94655.224 ms  t=321445078  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  94655.224 ms  t=321445078  HOOK L up            at hook: none pending
+  94684.328 ms  t=321445109  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  94685.336 ms  t=321445109  HOOK L down          at hook: none pending
+  94735.021 ms  t=321445156  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  94735.021 ms  t=321445156  HOOK L up            at hook: none pending
+  95380.038 ms  t=321445796  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  95380.038 ms  t=321445796  HOOK L down          at hook: none pending
+  95386.140 ms  t=321445812  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  95386.140 ms  t=321445812  HOOK L up            at hook: none pending
+  95399.872 ms  t=321445828  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  95400.264 ms  t=321445828  HOOK L down          at hook: none pending
+  95460.291 ms  t=321445875  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  95460.291 ms  t=321445875  HOOK L up            at hook: none pending
+  95509.139 ms  t=321445937  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  95509.139 ms  t=321445937  HOOK L down          at hook: none pending
+  95532.140 ms  t=321445953  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  95532.140 ms  t=321445953  HOOK L up            at hook: none pending
+  95578.140 ms  t=321446000  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  95578.140 ms  t=321446000  HOOK L down          at hook: none pending
+  95617.519 ms  t=321446031  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  95618.288 ms  t=321446031  HOOK L up            at hook: none pending
+  100384.084 ms  t=321450812  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  100384.084 ms  t=321450812  HOOK L down          at hook: none pending
+  100442.083 ms  t=321450859  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  100442.083 ms  t=321450859  HOOK L up            at hook: none pending
+  100534.083 ms  t=321450953  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  100534.083 ms  t=321450953  HOOK L down          at hook: none pending
+  100590.083 ms  t=321451015  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  100590.083 ms  t=321451015  HOOK L up            at hook: none pending
+  103126.172 ms  t=321453546  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  103126.172 ms  t=321453546  HOOK L down          at hook: none pending
+  103205.059 ms  t=321453625  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  103205.059 ms  t=321453625  HOOK L up            at hook: none pending
+  103259.184 ms  t=321453687  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  103260.171 ms  t=321453687  HOOK L down          at hook: none pending
+  103267.268 ms  t=321453687  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  103267.268 ms  t=321453687  HOOK L up            at hook: none pending
+  103290.052 ms  t=321453718  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  103290.052 ms  t=321453718  HOOK L down          at hook: none pending
+  103297.384 ms  t=321453718  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  103298.140 ms  t=321453718  HOOK L up            at hook: none pending
+  103309.224 ms  t=321453734  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  103309.224 ms  t=321453734  HOOK L down          at hook: none pending
+  103336.051 ms  t=321453750  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  103336.051 ms  t=321453750  HOOK L up            at hook: none pending
+  103340.051 ms  t=321453765  RAW  L down          dev=VID_1532&PID_0015&MI_00
+  103340.051 ms  t=321453765  HOOK L down          at hook: none pending
+  103371.050 ms  t=321453796  RAW  L up            dev=VID_1532&PID_0015&MI_00
+  103371.050 ms  t=321453796  HOOK L up            at hook: none pending
+
