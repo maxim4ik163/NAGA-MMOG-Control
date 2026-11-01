@@ -66,14 +66,36 @@ func main() {
 		out = io.MultiWriter(f, os.Stdout)
 	}
 	logf("Naga keypad probe. %s", time.Now().Format("2006-01-02 15:04:05"))
+	logf("")
+	logf("== Naga devices known to Windows")
+	for _, n := range nagaDevNodes() {
+		logf("  %s", n.ID)
+		logf("     %q  class=%s  service=%s  status=%08X problem=%d (cm=%d)", n.Desc, n.Class, n.Service, n.Status, n.Problem, n.StatusErr)
+	}
+	logf("")
+	logf("== HID interfaces of the Naga")
 	var pad *hidDevice
 	for _, d := range enumerateHID() {
-		if d.VID == 0x1532 && d.PID == 0x0015 {
-			logf("  collection usage %04X:%04X in=%d feature=%d  %s", d.UsagePage, d.Usage, d.InLen, d.FeatLen, d.Path)
-			if strings.Contains(strings.ToLower(d.Path), "mi_01") {
-				dd := d
-				pad = &dd
+		if !strings.Contains(strings.ToLower(d.Path), "vid_1532&pid_0015") {
+			continue
+		}
+		logf("  %s", d.Path)
+		logf("     usage %04X:%04X in=%d feature=%d attributes read=%v", d.UsagePage, d.Usage, d.InLen, d.FeatLen, d.Opened)
+		for _, a := range []struct {
+			name string
+			acc  uint32
+		}{{"query", 0}, {"read", GENERIC_READ}, {"read/write", GENERIC_READ | GENERIC_WRITE}} {
+			h, err := openErr(d.Path, a.acc)
+			if err != nil {
+				logf("     open %-10s: %v", a.name, err)
+			} else {
+				logf("     open %-10s: ok", a.name)
+				closeHandle(h)
 			}
+		}
+		if strings.Contains(strings.ToLower(d.Path), "mi_01") {
+			dd := d
+			pad = &dd
 		}
 	}
 	if pad == nil {
