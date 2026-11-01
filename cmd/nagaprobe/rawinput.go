@@ -16,6 +16,7 @@ const (
 	RID_INPUT        = 0x10000003
 	RIDI_DEVICENAME  = 0x20000007
 	RIM_TYPEKEYBOARD = 1
+	RIM_TYPEMOUSE    = 0
 
 	RI_KEY_BREAK = 1
 	RI_KEY_E0    = 2
@@ -67,6 +68,7 @@ type keyEvent struct {
 var (
 	devNames = map[uintptr]string{}
 	onKey    func(keyEvent)
+	onMouse  func(dev string, buttonFlags uint16)
 )
 
 func rawDeviceName(h uintptr) string {
@@ -110,10 +112,17 @@ func wndProc(hwnd, m, wp, lp uintptr) uintptr {
 		if r, _, _ := pGetRawInputData.Call(lp, RID_INPUT, uintptr(unsafe.Pointer(&buf[0])), ptr(&size), 24); int32(r) <= 0 {
 			break
 		}
+		hDev := *(*uintptr)(unsafe.Pointer(&buf[8]))
+		if *(*uint32)(unsafe.Pointer(&buf[0])) == RIM_TYPEMOUSE && len(buf) >= 24+8 {
+			// RAWMOUSE: usFlags u16, pad u16, usButtonFlags u16, usButtonData u16, ...
+			if bf := *(*uint16)(unsafe.Pointer(&buf[28])); bf != 0 && onMouse != nil {
+				onMouse(rawDeviceName(hDev), bf)
+			}
+			break
+		}
 		if *(*uint32)(unsafe.Pointer(&buf[0])) != RIM_TYPEKEYBOARD || len(buf) < 24+12 {
 			break
 		}
-		hDev := *(*uintptr)(unsafe.Pointer(&buf[8]))
 		mk := *(*uint16)(unsafe.Pointer(&buf[24]))
 		fl := *(*uint16)(unsafe.Pointer(&buf[26]))
 		vk := *(*uint16)(unsafe.Pointer(&buf[30]))
@@ -136,7 +145,7 @@ func wndProc(hwnd, m, wp, lp uintptr) uintptr {
 	return r
 }
 
-// listenKeys receives keyboard raw input from all keyboards for seconds
+// listenKeys receives keyboard and mouse raw input from all devices for seconds
 // seconds. It only observes; it never blocks or changes keys.
 func listenKeys(seconds int, cb func(keyEvent)) error {
 	onKey = cb
@@ -156,8 +165,11 @@ func listenKeys(seconds int, cb func(keyEvent)) error {
 	if hwnd == 0 {
 		return err
 	}
-	rid := rawInputDevice{UsagePage: 0x01, Usage: 0x06, Flags: RIDEV_INPUTSINK, Target: hwnd}
-	if r, _, err := pRegisterRawInputDevices.Call(ptr(&rid), 1, unsafe.Sizeof(rid)); r == 0 {
+	rid := [2]rawInputDevice{
+		{UsagePage: 0x01, Usage: 0x06, Flags: RIDEV_INPUTSINK, Target: hwnd},
+		{UsagePage: 0x01, Usage: 0x02, Flags: RIDEV_INPUTSINK, Target: hwnd},
+	}
+	if r, _, err := pRegisterRawInputDevices.Call(uintptr(unsafe.Pointer(&rid[0])), 2, unsafe.Sizeof(rid[0])); r == 0 {
 		return err
 	}
 	pSetTimer.Call(hwnd, 1, uintptr(seconds*1000), 0)

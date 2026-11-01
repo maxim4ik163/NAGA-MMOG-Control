@@ -1,14 +1,13 @@
 //go:build windows
 
-// nagaprobe: read-only probe for the original Razer Naga (1532:0015).
+// nagaprobe: probe for the original Razer Naga (1532:0015).
 //
-// It lists the mouse's HID collections, sends only GET commands (firmware,
-// serial, DPI, polling rate, LED states) and then records which keys the
-// side keypad sends. Nothing is written to the mouse.
+// It lists the mouse's HID collections, sends GET commands, records which
+// buttons send and, only if the user agrees, runs a reversible write test
+// (DPI, LEDs, polling rate; each value is put back).
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -23,7 +22,10 @@ const (
 	nagaPID  = 0x0015
 )
 
-var out io.Writer = os.Stdout
+var (
+	out     io.Writer = os.Stdout
+	logFile io.Writer = io.Discard
+)
 
 func logf(format string, a ...any) { fmt.Fprintf(out, format+"\n", a...) }
 
@@ -158,11 +160,12 @@ func main() {
 	if f, err := os.Create(logPath); err == nil {
 		defer f.Close()
 		out = io.MultiWriter(os.Stdout, f)
+		logFile = f
 	} else {
 		logPath = ""
 	}
 
-	logf("Naga probe — read-only. %s", time.Now().Format("2006-01-02 15:04:05"))
+	logf("Naga probe v2. %s", time.Now().Format("2006-01-02 15:04:05"))
 	logf("")
 	all := enumerateHID()
 	var razer []hidDevice
@@ -197,11 +200,12 @@ func main() {
 		logf("No Naga collection declares a feature report.")
 	}
 	found := false
+	var ctl hidDevice
 	for _, d := range cands {
 		logf("-- usage %04X:%04X feature=%d", d.UsagePage, d.Usage, d.FeatLen)
 		logf("  %s", d.Path)
 		if probeCollection(d) {
-			found = true
+			found, ctl = true, d
 			logf("  => this collection answers Razer commands")
 			break
 		}
@@ -210,12 +214,19 @@ func main() {
 		logf("No collection answered.")
 	}
 
-	const secs = 60
+	const secs = 30
 	logf("")
-	logf("== Side keypad (%d s, observation only)", secs)
-	logf("Switch on the bottom to 123: press side buttons 1..12 in order.")
-	logf("Then switch to NUM: press 1..12 again. Also press the two thumb buttons above the keypad, if any.")
+	logf("== Buttons (%d s, observation only)", secs)
+	logf("Press each of the two buttons next to the left button a few times,")
+	logf("then the wheel click, and a few side buttons.")
 	seen := 0
+	onMouse = func(dev string, bf uint16) {
+		if !isRazer(dev) {
+			return
+		}
+		seen++
+		logf("  mouse flags=%04X %s  dev=%s", bf, mouseFlagNames(bf), shortDev(dev))
+	}
 	err := listenKeys(secs, func(e keyEvent) {
 		if !isRazer(e.Device) || e.Up {
 			return
@@ -227,13 +238,17 @@ func main() {
 	if err != nil {
 		logf("raw input error: %v", err)
 	}
-	logf("%d key presses from Razer devices.", seen)
+	logf("%d button events from Razer devices.", seen)
+	logf("")
+	if found {
+		writeTest(ctl)
+	}
 	logf("")
 	if logPath != "" {
 		fmt.Printf("Saved to %s\n", logPath)
 	}
 	fmt.Print("Press Enter to close.")
-	bufio.NewReader(os.Stdin).ReadString('\n')
+	stdin.ReadString('\n')
 }
 
 func shortDev(p string) string {
@@ -245,4 +260,22 @@ func shortDev(p string) string {
 		}
 	}
 	return u
+}
+
+func mouseFlagNames(bf uint16) string {
+	names := []struct {
+		bit  uint16
+		name string
+	}{
+		{0x0001, "L down"}, {0x0002, "L up"}, {0x0004, "R down"}, {0x0008, "R up"},
+		{0x0010, "M down"}, {0x0020, "M up"}, {0x0040, "B4 down"}, {0x0080, "B4 up"},
+		{0x0100, "B5 down"}, {0x0200, "B5 up"}, {0x0400, "wheel"}, {0x0800, "h-wheel"},
+	}
+	var parts []string
+	for _, n := range names {
+		if bf&n.bit != 0 {
+			parts = append(parts, n.name)
+		}
+	}
+	return strings.Join(parts, ", ")
 }
