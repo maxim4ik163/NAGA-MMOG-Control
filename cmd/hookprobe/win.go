@@ -15,6 +15,8 @@ var (
 	pGetModuleHandleW        = kernel32.NewProc("GetModuleHandleW")
 	pGetStdHandle            = kernel32.NewProc("GetStdHandle")
 	pFlushConsoleInputBuffer = kernel32.NewProc("FlushConsoleInputBuffer")
+	pGetConsoleMode          = kernel32.NewProc("GetConsoleMode")
+	pSetConsoleMode          = kernel32.NewProc("SetConsoleMode")
 
 	pRegisterClassExW        = user32.NewProc("RegisterClassExW")
 	pCreateWindowExW         = user32.NewProc("CreateWindowExW")
@@ -141,3 +143,15 @@ func flushConsoleInput() {
 }
 
 var syscallCallback = syscall.NewCallback
+
+// disableQuickEdit turns off the console's QuickEdit mode. With it on, a
+// click into the console window starts a selection and Windows pauses every
+// write to the console until Enter/Esc, which looks like a hang.
+func disableQuickEdit() {
+	const ENABLE_QUICK_EDIT_MODE, ENABLE_EXTENDED_FLAGS = 0x40, 0x80
+	h, _, _ := pGetStdHandle.Call(^uintptr(9)) // STD_INPUT_HANDLE
+	var mode uint32
+	if r, _, _ := pGetConsoleMode.Call(h, ptr(&mode)); r != 0 {
+		pSetConsoleMode.Call(h, uintptr((mode&^ENABLE_QUICK_EDIT_MODE)|ENABLE_EXTENDED_FLAGS))
+	}
+}

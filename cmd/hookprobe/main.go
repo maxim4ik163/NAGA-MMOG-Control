@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strings"
 	"time"
 	"unsafe"
 )
@@ -335,6 +336,104 @@ func summary(ev []event) {
 	logf("  hook events: device known at hook time %d, unknown %d", known, unknown)
 }
 
+// leftGaps returns, for every left press after the first, how long the
+// button had been released before it (hook timing).
+func leftGaps(ev []event) (gaps []time.Duration, holds []time.Duration) {
+	var lastDown, lastUp time.Duration = -1, -1
+	for _, e := range ev {
+		if e.src != "HOOK" {
+			continue
+		}
+		switch e.what {
+		case "L down":
+			if lastUp >= 0 {
+				gaps = append(gaps, e.t-lastUp)
+			}
+			lastDown = e.t
+		case "L up":
+			if lastDown >= 0 {
+				holds = append(holds, e.t-lastDown)
+			}
+			lastUp = e.t
+		}
+	}
+	return
+}
+
+func ms(d time.Duration) float64 { return float64(d.Microseconds()) / 1000 }
+
+// calibrate: in phase 3 the user clicked about once a second, so any release
+// shorter than 250 ms there is chatter. In phase 4 the gap inside a real
+// double click is intentional. The filter threshold must sit above the
+// longest chatter and well below the shortest intentional gap.
+func calibrate(single, double []event) {
+	const sep = 250 * time.Millisecond
+	logf("== Anti-chatter calibration")
+	g1, _ := leftGaps(single)
+	var chatter []time.Duration
+	for _, g := range g1 {
+		if g < sep {
+			chatter = append(chatter, g)
+		}
+	}
+	presses := len(g1) + 1
+	if len(g1) == 0 {
+		presses = 0
+	}
+	logf("  phase 3: %d presses reported, %d of them were chatter", presses, len(chatter))
+	var maxChatter time.Duration
+	for _, c := range chatter {
+		if c > maxChatter {
+			maxChatter = c
+		}
+	}
+	if len(chatter) > 0 {
+		sort.Slice(chatter, func(i, j int) bool { return chatter[i] < chatter[j] })
+		var parts []string
+		for _, c := range chatter {
+			parts = append(parts, fmt.Sprintf("%.1f", ms(c)))
+		}
+		logf("  chatter releases, ms: %s", strings.Join(parts, " "))
+	}
+	g2, _ := leftGaps(double)
+	var intent []time.Duration
+	floor := maxChatter * 3 / 2
+	if floor < 15*time.Millisecond {
+		floor = 15 * time.Millisecond
+	}
+	for _, g := range g2 {
+		if g < sep && g > floor {
+			intent = append(intent, g)
+		}
+	}
+	var minIntent time.Duration
+	if len(intent) > 0 {
+		sort.Slice(intent, func(i, j int) bool { return intent[i] < intent[j] })
+		minIntent = intent[0]
+		var parts []string
+		for _, c := range intent {
+			parts = append(parts, fmt.Sprintf("%.1f", ms(c)))
+		}
+		logf("  phase 4: intentional double-click gaps, ms: %s", strings.Join(parts, " "))
+	} else {
+		logf("  phase 4: no intentional double-click gaps recognised")
+	}
+	if len(chatter) == 0 {
+		logf("  no chatter seen in phase 3; a filter would not be needed right now")
+		return
+	}
+	th := maxChatter + maxChatter/2
+	if th < maxChatter+5*time.Millisecond {
+		th = maxChatter + 5*time.Millisecond
+	}
+	if minIntent > 0 && th > minIntent*6/10 {
+		logf("  WARNING: chatter (%.1f ms) is close to your double-click gap (%.1f ms);", ms(maxChatter), ms(minIntent))
+		logf("  a time-only filter may eat some double clicks")
+		th = minIntent * 6 / 10
+	}
+	logf("  suggested threshold: ignore a press if the button was released less than %.0f ms ago", ms(th))
+}
+
 func clickStats(ev []event) {
 	var lastDown, lastUp time.Duration = -1, -1
 	n := 0
@@ -382,9 +481,10 @@ func main() {
 	logPath := filepath.Join(filepath.Dir(exe), "naga-hookprobe.log")
 	if f, err := os.Create(logPath); err == nil {
 		defer f.Close()
-		out = io.MultiWriter(os.Stdout, f)
+		out = io.MultiWriter(f, os.Stdout) // file first: the console can pause output
 	}
-	logf("Naga hook probe. %s", time.Now().Format("2006-01-02 15:04:05"))
+	disableQuickEdit()
+	logf("Naga hook probe v2. %s", time.Now().Format("2006-01-02 15:04:05"))
 	if err := setupWindow(); err != nil {
 		logf("window: %v", err)
 		return
@@ -411,15 +511,29 @@ func main() {
 	summary(ev)
 
 	logf("")
-	logf("== Phase 3 (25 s): left button.")
-	logf("Click the left button normally about 20 times, some single, some double clicks,")
-	logf("and drag something (hold the button) two or three times.")
+	logf("== Phase 3 (20 s): single clicks.")
+	logf("Click the left button ONCE at a time, slowly (about one click per second),")
+	logf("15 times. Click on an empty spot (desktop or this window's title).")
 	waitEnter("Press Enter to start phase 3...")
-	ev = phase(25)
-	printTimeline(ev)
+	single := phase(20)
+	logf("  -- left button, single clicks")
+	clickStats(single)
+
 	logf("")
-	logf("  -- left button presses (hook timing)")
-	clickStats(ev)
+	logf("== Phase 4 (20 s): double clicks.")
+	logf("Double-click the way you normally do, 8 times, pausing a second between them.")
+	waitEnter("Press Enter to start phase 4...")
+	double := phase(20)
+	logf("  -- left button, double clicks")
+	clickStats(double)
+
+	logf("")
+	calibrate(single, double)
+	logf("")
+	logf("== Raw timelines of phases 3 and 4")
+	printTimeline(single)
+	logf("  ----")
+	printTimeline(double)
 
 	logf("")
 	fmt.Printf("Saved to %s\n", logPath)
