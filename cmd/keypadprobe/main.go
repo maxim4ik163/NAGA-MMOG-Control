@@ -98,6 +98,10 @@ func main() {
 			pad = &dd
 		}
 	}
+	if readWinUSB(30 * time.Second) {
+		finish(logPath)
+		return
+	}
 	if pad == nil {
 		logf("The keypad interface (MI_01) was not found.")
 		finish(logPath)
