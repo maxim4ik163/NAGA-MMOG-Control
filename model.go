@@ -299,6 +299,9 @@ func validateSettings(s *Settings) error {
 
 // exe → profile: every exe may belong to one enabled profile only.
 func validateData(d *Data) error {
+	if d.Profiles == nil {
+		d.Profiles = []*Profile{} // the UI expects a list, never null
+	}
 	owner := map[string]string{}
 	ids := map[string]bool{}
 	for _, p := range d.Profiles {

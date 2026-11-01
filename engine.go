@@ -494,13 +494,29 @@ func (e *Engine) calibStart(phase string) error {
 }
 
 func (e *Engine) calibStop() {
-	ev := hook.stopRecording()
+	ev, dur := hook.stopRecording()
 	e.mu.Lock()
 	if e.calibPhase != "" {
-		e.calib[e.calibPhase] = ev
+		e.calib[e.calibPhase] = trimRecording(ev, dur)
 	}
 	e.calibPhase = ""
 	e.mu.Unlock()
+}
+
+// calibReset drops a recording ("" = both) and stops a running one.
+func (e *Engine) calibReset(phase string) {
+	e.mu.Lock()
+	running := e.calibPhase != ""
+	e.calibPhase = ""
+	if phase == "" {
+		e.calib = map[string][]clickEvent{}
+	} else {
+		delete(e.calib, phase)
+	}
+	e.mu.Unlock()
+	if running {
+		hook.stopRecording()
+	}
 }
 
 func (e *Engine) calibResult() (calibResult, error) {

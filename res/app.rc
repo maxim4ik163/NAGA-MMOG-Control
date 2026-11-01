@@ -2,8 +2,8 @@
 1 ICON "app.ico"
 1 24 "app.manifest"
 1 VERSIONINFO
-FILEVERSION 0,1,0,0
-PRODUCTVERSION 0,1,0,0
+FILEVERSION 0,1,1,0
+PRODUCTVERSION 0,1,1,0
 FILEOS 0x40004
 FILETYPE 0x1
 BEGIN
@@ -13,8 +13,8 @@ BEGIN
     BEGIN
       VALUE "FileDescription", "Naga Control"
       VALUE "ProductName", "Naga Control"
-      VALUE "FileVersion", "0.1.0"
-      VALUE "ProductVersion", "0.1.0"
+      VALUE "FileVersion", "0.1.1"
+      VALUE "ProductVersion", "0.1.1"
       VALUE "OriginalFilename", "NagaControl.exe"
     END
   END

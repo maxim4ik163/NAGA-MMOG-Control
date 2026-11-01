@@ -7,6 +7,8 @@ from pathlib import Path
 
 WEB = Path(__file__).resolve().parent.parent / "web"
 seed = json.loads(Path(sys.argv[1]).read_text())
+if len(sys.argv) > 4 and sys.argv[4] == "noprofiles":
+    seed["data"]["profiles"] = None
 PORT = int(sys.argv[2])
 status = {"version": "0.1.0", "mouse": True, "fw": "1.13", "devErr": "", "dpi": 1400, "poll": 1000,
           "stage": 1, "stages": seed["data"]["settings"]["dpi"]["stages"], "stagesFrom": "global", "hold": 0,
@@ -42,7 +44,15 @@ class H(SimpleHTTPRequestHandler):
             ph = status["calibPhase"]; status["calibPhase"] = ""
             status["calibSingle" if ph == "single" else "calibDouble"] = 21 if ph == "single" else 34
             return self.send_json(state)
+        if p == "/api/calib/reset":
+            status["calibPhase"] = ""
+            ph = (body or {}).get("phase", "")
+            if ph in ("", "single"): status["calibSingle"] = 0
+            if ph in ("", "double"): status["calibDouble"] = 0
+            return self.send_json(state)
         if p == "/api/calib/result":
+            if not status["calibSingle"] or not status["calibDouble"]:
+                return self.send_json({"error": "сначала пройдите оба шага"}, 400)
             return self.send_json({"T": 45, "H": 30, "G": 100, "singlesOk": 15, "singles": 15, "doublesOk": 10, "doubles": 10,
                                    "rawSinglesOk": 9, "rawDoublesOk": 2, "chatterSeen": 7, "maxChatterMs": 81.2, "score": "одиночные 15/15, двойные 10/10"})
         return self.send_json(state)

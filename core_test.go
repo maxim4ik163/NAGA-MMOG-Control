@@ -248,3 +248,22 @@ func TestFitChatterRecorded(t *testing.T) {
 		t.Errorf("fit too weak: %s", r.Score)
 	}
 }
+
+func TestTrimRecording(t *testing.T) {
+	ms := time.Millisecond
+	ev := []clickEvent{
+		{40 * ms, false},                  // tail of the Start click
+		{60 * ms, true}, {70 * ms, false}, // its bounce
+		{1000 * ms, true}, {1080 * ms, false},
+		{2000 * ms, true}, {2010 * ms, false}, {2030 * ms, true}, {2100 * ms, false}, // a click with chatter
+		{3500 * ms, true}, {3580 * ms, false}, // the Done click
+	}
+	got := trimRecording(ev, 3600*ms)
+	if len(got) != 6 || got[0].T != 1000*ms || got[len(got)-1].T != 2100*ms {
+		t.Fatalf("trim: %v", got)
+	}
+	// stopped long after the last click (e.g. with the keyboard): keep it
+	if got := trimRecording(ev, 9000*ms); len(got) != 8 {
+		t.Fatalf("keep last group: %d", len(got))
+	}
+}

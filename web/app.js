@@ -11,7 +11,7 @@ let scope = "global"; // "global" or a profile id
 let layer = "123";
 let sel = "123:1";
 let capture = null;   // key capture state for the combo field
-let calib = { step: 0, result: null };
+let calib = { result: null, busy: false, last: 0 };
 
 let LANG = "ru";
 const L = (ru, en) => (LANG === "ru" ? ru : en);
@@ -75,6 +75,12 @@ function defaultText(slot) {
   const [l, n] = slot.split(":");
   if (l === "m") return n === "4" ? L("Кнопка 4 (назад)", "Button 4 (back)") : L("Кнопка 5 (вперёд)", "Button 5 (forward)");
   return DEFAULTS[l][+n - 1];
+}
+function normalize(d) {
+  d.profiles = d.profiles || [];
+  for (const p of d.profiles) { p.exes = p.exes || []; p.bindings = p.bindings || {}; }
+  d.settings.global = d.settings.global || {};
+  return d;
 }
 function profileById(id) { return D.profiles.find((p) => p.id === id); }
 
@@ -203,14 +209,14 @@ function renderEditbar() {
   const b = document.getElementById("editbar");
   b.innerHTML = "";
   b.append(h("span", { class: "grow" }), dirty ? h("span", { class: "dirty" }, L("Есть несохранённые изменения", "Unsaved changes")) : h("span", { class: "pend" }, L("Все изменения сохранены", "All changes saved")),
-    h("button", { disabled: !dirty, onclick: () => { D = clone(S.data); dirty = false; renderAll(); } }, L("Отменить", "Revert")),
+    h("button", { disabled: !dirty, onclick: () => { D = normalize(clone(S.data)); dirty = false; renderAll(); } }, L("Отменить", "Revert")),
     h("button", { class: "primary", disabled: !dirty, onclick: save }, L("Сохранить", "Save")));
 }
 
 async function save() {
   try {
     const r = await api("save", D);
-    S = r; D = clone(r.data); dirty = false;
+    S = r; D = normalize(clone(r.data)); dirty = false;
     if (r.lang && r.lang !== LANG) LANG = r.lang;
     toast(L("Сохранено", "Saved"));
     renderAll();
@@ -466,32 +472,61 @@ function renderChatter(v) {
   v.append(renderWizard());
 }
 
+// The wizard's own buttons are clicked with the chattering left button, so
+// every action is guarded: one action at a time, none within 600 ms of the
+// previous one. The step is derived from what the app has recorded, not
+// counted locally, so a doubled click cannot skip a step.
+async function wizAct(fn) {
+  const now = Date.now();
+  if (calib.busy || now - (calib.last || 0) < 600) return;
+  calib.busy = true;
+  try { await fn(); } catch (e) { toast(e.message, true); }
+  calib.busy = false;
+  calib.last = Date.now();
+  renderView();
+}
+
+function wizStep() {
+  const st = S.status;
+  if (st.calibPhase === "single" || !st.calibSingle) return 0;
+  if (st.calibPhase === "double" || !st.calibDouble) return 1;
+  return 2;
+}
+
 function renderWizard() {
   const st = S.status;
+  const step = wizStep();
   const card = h("div", { class: "card" }, h("h2", {}, L("Калибровка по вашим кликам", "Calibrate from your clicks")));
   const steps = [
     [L("Шаг 1", "Step 1"), L("15 одиночных кликов", "15 single clicks")],
     [L("Шаг 2", "Step 2"), L("8 двойных кликов", "8 double clicks")],
     [L("Шаг 3", "Step 3"), L("Результат", "Result")],
   ];
-  card.append(h("div", { class: "wiz" }, ...steps.map(([a, b], i) => h("div", { class: calib.step === i ? "on" : calib.step > i ? "done" : "" }, h("b", {}, a), b))));
-  if (calib.step < 2) {
-    const phase = calib.step === 0 ? "single" : "double";
+  card.append(h("div", { class: "wiz" }, ...steps.map(([a, b], i) => h("div", { class: step === i ? "on" : step > i ? "done" : "" }, h("b", {}, a), b))));
+  const reset = h("button", { onclick: () => wizAct(async () => { S = await api("calib/reset", {}); calib.result = null; }) }, L("Сбросить калибровку", "Reset the calibration"));
+  if (step < 2) {
+    const phase = step === 0 ? "single" : "double";
     const rec = st.calibPhase === phase;
-    const target = calib.step === 0 ? 15 : 8;
-    const done = calib.step === 0 ? st.calibSingle : st.calibDouble;
-    card.append(h("p", {}, calib.step === 0
-      ? L("Нажмите «Начать», затем кликайте левой кнопкой в рамке ниже по одному разу, медленно — примерно раз в секунду. 15 кликов.", "Press Start, then click once at a time inside the box below, slowly — about once a second. 15 clicks.")
-      : L("Теперь сделайте 8 двойных кликов в рамке, так, как вы делаете обычно, с паузой около секунды между ними.", "Now double-click 8 times inside the box, the way you normally do, pausing about a second between them.")));
+    const target = step === 0 ? 15 : 8;
+    card.append(h("p", {}, step === 0
+      ? L("Нажмите «Начать», затем кликайте левой кнопкой в рамке ниже по одному разу, медленно — примерно раз в секунду. 15 кликов. Потом «Готово».", "Press Start, then click once at a time inside the box below, slowly — about once a second. 15 clicks. Then Done.")
+      : L("Теперь сделайте 8 двойных кликов в рамке, так, как вы делаете обычно, с паузой около секунды между ними. Потом «Готово».", "Now double-click 8 times inside the box, the way you normally do, pausing about a second between them. Then Done.")));
     card.append(h("div", { class: "clickpad" + (rec ? " rec" : "") },
-      rec ? h("span", { class: "big", id: "calibCount" }, st.calibCount) : h("span", {}, done ? L("записано нажатий: ", "presses recorded: ") + done : L("здесь", "here")),
+      rec ? h("span", { class: "big", id: "calibCount" }, st.calibCount) : h("span", {}, L("здесь", "here")),
       h("span", { class: "small" }, rec ? L("нажатий записано (с дребезгом их больше, чем кликов)", "presses recorded (with chatter there are more than clicks)") : "")));
     card.append(h("div", { class: "row" },
-      rec ? h("button", { class: "primary", onclick: async () => { S = await api("calib/stop", {}); calib.step++; renderView(); if (calib.step === 2) runFit(); } }, L("Готово", "Done"))
-        : h("button", { class: "primary", onclick: async () => { try { S = await api("calib/start", { phase }); renderView(); } catch (e) { toast(e.message, true); } } }, L("Начать", "Start")),
-      calib.step > 0 && !rec ? h("button", { onclick: () => { calib.step--; renderView(); } }, L("Назад", "Back")) : null,
-      h("span", { class: "muted small" }, L("цель: ", "target: ") + target + (calib.step === 0 ? L(" кликов", " clicks") : L(" двойных", " doubles")))));
+      rec ? h("button", { class: "primary", onclick: () => wizAct(async () => {
+              S = await api("calib/stop", {});
+              const n = phase === "single" ? S.status.calibSingle : S.status.calibDouble;
+              if (n < target) toast(L("Записано мало нажатий: ", "Too few presses recorded: ") + n + L(". Пройдите шаг ещё раз.", ". Please repeat the step."), true);
+              if (wizStep() === 2) runFit();
+            }) }, L("Готово", "Done"))
+        : h("button", { class: "primary", onclick: () => wizAct(async () => { S = await api("calib/start", { phase }); }) }, L("Начать", "Start")),
+      rec ? h("button", { onclick: () => wizAct(async () => { S = await api("calib/reset", { phase }); }) }, L("Отмена", "Cancel")) : null,
+      step > 0 && !rec ? reset : null,
+      h("span", { class: "muted small" }, L("цель: ", "target: ") + target + (step === 0 ? L(" кликов", " clicks") : L(" двойных", " doubles")))));
   } else {
+    if (!calib.result && !calib.busy) runFit();
     const r = calib.result;
     if (!r) card.append(h("p", { class: "muted" }, L("Считаю…", "Computing…")));
     else if (r.error) card.append(h("p", {}, r.error));
@@ -502,21 +537,23 @@ function renderWizard() {
         h("span", {}, L("Дребезг в шаге 1", "Chatter in step 1")), h("span", {}, r.chatterSeen + L(" раз, самый длинный ", " times, longest ") + r.maxChatterMs.toFixed(1) + L(" мс", " ms")),
         h("span", {}, L("Параметры", "Parameters")), h("span", {}, "T = " + r.T + L(" мс, H = ", " ms, H = ") + r.H + L(" мс, G = ", " ms, G = ") + r.G + L(" мс", " ms"))));
       if (r.chatterSeen === 0) card.append(h("p", { class: "muted small" }, L("В шаге 1 дребезга не было: фильтр сейчас не нужен.", "No chatter in step 1: the filter is not needed right now.")));
-      if (r.singles !== 15 || r.doubles !== 8) card.append(h("p", { class: "muted small" }, L("Распознано кликов: ", "Clicks recognised: ") + r.singles + L(" и двойных: ", " and doubles: ") + r.doubles + L(". Если это не совпадает с тем, что вы делали, пройдите шаги ещё раз с паузами подлиннее.", ". If that is not what you did, repeat the steps with longer pauses.")));
-      card.append(h("div", { class: "row" },
-        h("button", { class: "primary", onclick: () => {
-          Object.assign(D.settings.chatter, { enabled: true, t: r.T, h: r.H, g: r.G, calibrated: new Date().toISOString(), score: r.score });
-          save();
-        } }, L("Применить и сохранить", "Apply and save")),
-        h("button", { onclick: () => { calib = { step: 0, result: null }; renderView(); } }, L("Заново", "Start over"))));
+      if (r.singles !== 15 || r.doubles !== 8) card.append(h("p", { class: "muted small" }, L("Распознано одиночных: ", "Recognised singles: ") + r.singles + L(", двойных: ", ", doubles: ") + r.doubles + L(". Если это не совпадает с тем, что вы делали, сбросьте и пройдите шаги ещё раз с паузами подлиннее.", ". If that is not what you did, reset and repeat the steps with longer pauses.")));
     }
+    card.append(h("div", { class: "row" },
+      r && !r.error ? h("button", { class: "primary", onclick: () => wizAct(async () => {
+        Object.assign(D.settings.chatter, { enabled: true, t: r.T, h: r.H, g: r.G, calibrated: new Date().toISOString(), score: r.score });
+        await save();
+      }) }, L("Применить и сохранить", "Apply and save")) : null,
+      reset));
   }
   return card;
 }
 
 async function runFit() {
   calib.result = null;
+  calib.busy = true;
   try { calib.result = await api("calib/result", {}); } catch (e) { calib.result = { error: e.message }; }
+  calib.busy = false;
   renderView();
 }
 
@@ -591,7 +628,7 @@ async function init() {
     return;
   }
   LANG = S.lang || "ru";
-  D = clone(S.data);
+  D = normalize(clone(S.data));
   renderAll();
   const es = new EventSource("/api/events?t=" + encodeURIComponent(TOKEN));
   es.onmessage = (m) => { try { onStatus(JSON.parse(m.data)); } catch (e) { /* ignore */ } };

@@ -265,3 +265,39 @@ func fitChatter(single, double []clickEvent) calibResult {
 		best.RawSinglesOK, best.Singles, best.RawDoublesOK, best.Doubles)
 	return best
 }
+
+// trimRecording removes the clicks that belong to the wizard's own buttons:
+// the tail of the "Start" click (bounces right after recording begins) and
+// the "Done" click (the last group, if it ended shortly before stopping).
+func trimRecording(ev []clickEvent, stopAt time.Duration) []clickEvent {
+	const lead = 250 * time.Millisecond
+	const doneWindow = 1500 * time.Millisecond
+	i := 0
+	for i < len(ev) && ev[i].T < lead {
+		i++
+	}
+	// an "up" without its "down" at the start is meaningless
+	for i < len(ev) && !ev[i].Down {
+		i++
+	}
+	ev = ev[i:]
+	if len(ev) == 0 {
+		return ev
+	}
+	// find the start of the last group of presses
+	last := len(ev) - 1
+	start := 0
+	var lastUp time.Duration = -1
+	for j, e := range ev {
+		if e.Down && lastUp >= 0 && e.T-lastUp > groupGap {
+			start = j
+		}
+		if !e.Down {
+			lastUp = e.T
+		}
+	}
+	if stopAt-ev[last].T < doneWindow && start > 0 {
+		ev = ev[:start]
+	}
+	return ev
+}

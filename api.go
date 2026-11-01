@@ -234,6 +234,14 @@ func (a *API) handle(path string, body json.RawMessage) (any, error) {
 		a.eng.calibStop()
 		return a.state(), nil
 
+	case "calib/reset":
+		var v struct {
+			Phase string `json:"phase"`
+		}
+		_ = json.Unmarshal(body, &v)
+		a.eng.calibReset(v.Phase)
+		return a.state(), nil
+
 	case "calib/result":
 		return a.eng.calibResult()
 

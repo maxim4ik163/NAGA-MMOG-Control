@@ -104,13 +104,14 @@ func (h *mouseHook) startRecording() {
 	h.filter.flush()
 }
 
-func (h *mouseHook) stopRecording() []clickEvent {
+// stopRecording returns the clicks and how long the recording ran.
+func (h *mouseHook) stopRecording() ([]clickEvent, time.Duration) {
 	h.recMu.Lock()
 	defer h.recMu.Unlock()
 	h.rec = false
 	ev := h.recEvs
 	h.recEvs = nil
-	return ev
+	return ev, time.Since(h.base) - h.recT0
 }
 
 func (h *mouseHook) recordingCount() int {
