@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -67,16 +68,25 @@ func writeTest(d hidDevice) {
 	}
 	ox, oy := r[8], r[9]
 	logf("  DPI now: bytes %d/%d = %d/%d DPI", ox, oy, dpiFromByte(ox), dpiFromByte(oy))
-	const slow = 12 // 400 DPI by 100 + 25*b
-	_, tid, ok := do(h, fl, 0x04, 0x01, 0x03, slow, slow, 0x00)
-	logf("  set DPI bytes %d/%d: ok=%v tid=%02X", slow, slow, ok, tid)
+	final := ox
+	a := ask(fmt.Sprintf("  DPI to keep after the test (100..5600, Enter = %d):", dpiFromByte(ox)))
+	if v, err := strconv.Atoi(a); err == nil && v >= 100 && v <= 5600 {
+		final = byte((v - 100 + 12) / 25)
+	}
+	// Test with a value far from the current one so the change is obvious.
+	test, testName := byte(12), "much slower (400 DPI)"
+	if ox <= 36 {
+		test, testName = byte(124), "much faster (3200 DPI)"
+	}
+	_, tid, ok := do(h, fl, 0x04, 0x01, 0x03, test, test, 0x00)
+	logf("  set DPI bytes %d/%d (%d DPI): ok=%v tid=%02X", test, test, dpiFromByte(test), ok, tid)
 	if r, _, ok := do(h, fl, 0x04, 0x81, 0x03); ok {
 		logf("  read back: %d/%d", r[8], r[9])
 	}
-	ask("  Move the mouse: is the cursor much slower now (about 400 DPI)? y/n:")
-	_, _, ok = do(h, fl, 0x04, 0x01, 0x03, ox, oy, 0x00)
+	ask("  Move the mouse: is the cursor " + testName + " now? y/n:")
+	_, _, ok = do(h, fl, 0x04, 0x01, 0x03, final, final, 0x00)
 	if r, _, ok2 := do(h, fl, 0x04, 0x81, 0x03); ok2 {
-		logf("  restored DPI: ok=%v, read back %d/%d", ok, r[8], r[9])
+		logf("  DPI set to %d (byte %d): ok=%v, read back %d/%d", dpiFromByte(final), final, ok, r[8], r[9])
 	}
 
 	// --- LEDs
@@ -126,5 +136,5 @@ func writeTest(d hidDevice) {
 			logf("  polling restored: ok=%v, read back %s", ok, pollNames[r[8]])
 		}
 	}
-	logf("  write test done")
+	logf("  write test done, transfer retries: %d", transferRetries)
 }

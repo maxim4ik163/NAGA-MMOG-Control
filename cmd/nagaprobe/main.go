@@ -81,8 +81,42 @@ func onOff(b byte) string {
 
 var transactionIDs = []byte{0xFF, 0x3F, 0x1F}
 
-// transact sends one request and reads the response. It never retries the
-// request itself, only the read while the mouse reports "busy".
+// Minimum gap between any two USB transfers. Old Razer firmware stalls
+// (Windows: ERROR_GEN_FAILURE) when packets come too close together;
+// razercfg keeps 25 ms between packets for the Naga.
+const packetGap = 40 * time.Millisecond
+
+var lastTransfer time.Time
+
+func spacing() {
+	if d := time.Until(lastTransfer.Add(packetGap)); d > 0 {
+		time.Sleep(d)
+	}
+}
+
+// retryTransfer runs one transfer, retrying while the device stalls.
+// A stalled transfer was not accepted, so repeating it is safe.
+func retryTransfer(name string, f func() error) (int, error) {
+	var err error
+	for i := 0; i < 8; i++ {
+		if i > 0 {
+			time.Sleep(time.Duration(50*i) * time.Millisecond)
+		}
+		spacing()
+		err = f()
+		lastTransfer = time.Now()
+		if err == nil {
+			return i, nil
+		}
+	}
+	return 8, fmt.Errorf("%s: %v", name, err)
+}
+
+var transferRetries int // total retries, for the log
+
+// transact sends one request and reads the response. The request is sent
+// once (retried only while the device stalls); the response is re-read
+// while the mouse reports "busy".
 func transact(h uintptr, featLen int, req razerReport) (razerReport, error) {
 	var resp razerReport
 	n := razerReportLen + 1
@@ -91,19 +125,23 @@ func transact(h uintptr, featLen int, req razerReport) (razerReport, error) {
 	}
 	buf := make([]byte, n)
 	copy(buf[1:], req[:])
-	if err := setFeature(h, buf); err != nil {
-		return resp, fmt.Errorf("SetFeature: %v", err)
+	k, err := retryTransfer("SetFeature", func() error { return setFeature(h, buf) })
+	transferRetries += k
+	if err != nil {
+		return resp, err
 	}
 	for i := 0; i < 10; i++ {
-		time.Sleep(time.Duration(5+10*i) * time.Millisecond)
 		rb := make([]byte, n)
-		if err := getFeature(h, rb); err != nil {
-			return resp, fmt.Errorf("GetFeature: %v", err)
+		k, err := retryTransfer("GetFeature", func() error { return getFeature(h, rb) })
+		transferRetries += k
+		if err != nil {
+			return resp, err
 		}
 		copy(resp[:], rb[1:])
 		if resp[0] != 1 { // not busy
 			return resp, nil
 		}
+		time.Sleep(time.Duration(10*(i+1)) * time.Millisecond)
 	}
 	return resp, nil
 }
