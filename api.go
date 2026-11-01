@@ -126,7 +126,9 @@ func (a *API) events(w http.ResponseWriter, r *http.Request) {
 		a.subMu.Unlock()
 	}()
 	send := func() bool {
-		b, _ := json.Marshal(a.eng.status())
+		st := a.eng.status()
+		st.Autostart = autostartEnabled()
+		b, _ := json.Marshal(st)
 		if _, err := fmt.Fprintf(w, "data: %s\n\n", b); err != nil {
 			return false
 		}

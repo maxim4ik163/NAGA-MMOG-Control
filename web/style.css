@@ -5,8 +5,8 @@
   --line: #2e3238;
   --text: #e8eaed;
   --muted: #9aa0a6;
-  --accent: #3ddc84;
-  --accent2: #2bb56b;
+  --accent: #44d62c;
+  --accent2: #36b022;
   --warn: #f5b041;
   --err: #ef5350;
   --radius: 10px;
@@ -237,3 +237,57 @@ tr.off td { opacity: .5; }
 .card.flash { box-shadow: 0 0 0 2px var(--accent); transition: box-shadow .3s; }
 .warnbox { max-width: 600px; font-size: 13.5px; }
 .warnbox p { margin: 0 0 10px; }
+
+/* Naga Control */
+.brand .logo { width: 22px; height: 22px; color: var(--accent); }
+.padlayout { display: grid; grid-template-columns: minmax(300px, 380px) 1fr; gap: 20px; align-items: start; }
+.pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.pkey {
+  position: relative; min-height: 64px; padding: 8px 9px 7px; border-radius: 10px; cursor: pointer;
+  background: var(--panel2); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 3px; text-align: left;
+}
+.pkey:hover { border-color: #4a5058; }
+.pkey.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.pkey .num { font-size: 11px; color: var(--muted); font-weight: 600; }
+.pkey .act { font-size: 13px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; }
+.pkey .src { font-size: 10.5px; color: var(--muted); margin-top: auto; }
+.pkey.inh .act { color: var(--muted); }
+.pkey.force::after { content: "★"; position: absolute; right: 8px; top: 6px; font-size: 11px; color: var(--warn); }
+.pkey.pressed { background: #23361f; }
+.mrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-top: 12px; }
+.acts { display: flex; flex-direction: column; gap: 2px; }
+.acts label.check { padding: 6px 0; }
+.quick { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.quick button { font-size: 12.5px; padding: 3px 9px; }
+.combo { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 0 25px; }
+.combo input[type=text] { width: 220px; font-family: Consolas, monospace; }
+.sub { margin: 4px 0 0 25px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.xchip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 4px 3px 10px; background: var(--panel2); border: 1px solid var(--line); border-radius: 14px; font-size: 13px; }
+.xchip button { padding: 0 6px; border: none; background: none; color: var(--muted); }
+.xchip button:hover { color: var(--err); }
+.prow { display: grid; grid-template-columns: 26px 1fr auto; gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.prow:last-child { border-bottom: none; }
+.prow .nm input { width: 240px; font-weight: 600; }
+.prow .on-now { color: var(--accent); font-size: 12px; margin-left: 8px; }
+.steps { display: flex; flex-direction: column; gap: 6px; }
+.stage { display: grid; grid-template-columns: 30px 120px 1fr auto; gap: 12px; align-items: center; }
+.stage .lv { color: var(--muted); font-weight: 700; }
+.stage.cur .lv { color: var(--accent); }
+.clickpad {
+  border: 2px dashed var(--line); border-radius: 12px; height: 180px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px; text-align: center; color: var(--muted); cursor: pointer;
+}
+.clickpad.rec { border-color: var(--accent); color: var(--text); background: #18241a; }
+.clickpad .big { font-size: 34px; font-weight: 700; color: var(--text); }
+.wiz { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.wiz div { padding: 10px 12px; border-radius: 9px; background: var(--panel2); border: 1px solid var(--line); font-size: 13px; }
+.wiz div.on { border-color: var(--accent); }
+.wiz div.done { color: var(--muted); }
+.wiz b { display: block; font-size: 12px; color: var(--muted); }
+.result { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.kv { display: grid; grid-template-columns: 200px 1fr; gap: 6px 14px; font-size: 13.5px; }
+.kv span:nth-child(odd) { color: var(--muted); }
+code { font-family: Consolas, monospace; background: var(--panel2); padding: 1px 5px; border-radius: 4px; }
+ol.steps-list { margin: 6px 0 0; padding-left: 20px; line-height: 1.7; }

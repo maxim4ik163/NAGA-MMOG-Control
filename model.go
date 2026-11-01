@@ -243,7 +243,7 @@ func validateProfile(p *Profile) error {
 	if p.Name == "" {
 		return errors.New(T("у профиля должно быть имя", "the profile needs a name"))
 	}
-	var exes []string
+	exes := []string{}
 	seen := map[string]bool{}
 	for _, e := range p.Exes {
 		e = normalizeExe(e)
