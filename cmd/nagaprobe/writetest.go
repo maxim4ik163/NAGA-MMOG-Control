@@ -14,6 +14,7 @@ var stdin = bufio.NewReader(os.Stdin)
 
 // ask prints a question, waits for Enter and logs the answer.
 func ask(q string) string {
+	flushConsoleInput() // drop anything typed while the probe was busy
 	fmt.Print(q + " ")
 	a, _ := stdin.ReadString('\n')
 	a = strings.TrimSpace(a)

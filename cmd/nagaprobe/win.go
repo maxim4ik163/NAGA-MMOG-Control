@@ -26,9 +26,11 @@ var (
 	pHidD_SetFeature        = hidlib.NewProc("HidD_SetFeature")
 	pHidD_GetFeature        = hidlib.NewProc("HidD_GetFeature")
 
-	pCreateFileW  = kernel32.NewProc("CreateFileW")
-	pCloseHandle  = kernel32.NewProc("CloseHandle")
-	pGetModuleHnd = kernel32.NewProc("GetModuleHandleW")
+	pCreateFileW             = kernel32.NewProc("CreateFileW")
+	pCloseHandle             = kernel32.NewProc("CloseHandle")
+	pGetModuleHnd            = kernel32.NewProc("GetModuleHandleW")
+	pGetStdHandle            = kernel32.NewProc("GetStdHandle")
+	pFlushConsoleInputBuffer = kernel32.NewProc("FlushConsoleInputBuffer")
 
 	pRegisterClassExW        = user32.NewProc("RegisterClassExW")
 	pCreateWindowExW         = user32.NewProc("CreateWindowExW")
@@ -178,4 +180,12 @@ func getFeature(h uintptr, buf []byte) error {
 		return err
 	}
 	return nil
+}
+
+func flushConsoleInput() {
+	const STD_INPUT_HANDLE = ^uintptr(9) // (DWORD)-10
+	h, _, _ := pGetStdHandle.Call(STD_INPUT_HANDLE)
+	if h != 0 && h != invalidHandle {
+		pFlushConsoleInputBuffer.Call(h)
+	}
 }

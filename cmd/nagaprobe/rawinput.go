@@ -3,8 +3,10 @@
 package main
 
 import (
+	"runtime"
 	"strings"
 	"syscall"
+	"time"
 	"unsafe"
 )
 
@@ -69,6 +71,8 @@ var (
 	devNames = map[uintptr]string{}
 	onKey    func(keyEvent)
 	onMouse  func(dev string, buttonFlags uint16)
+
+	listenUntil time.Time
 )
 
 func rawDeviceName(h uintptr) string {
@@ -138,7 +142,9 @@ func wndProc(hwnd, m, wp, lp uintptr) uintptr {
 			})
 		}
 	case WM_TIMER:
-		pPostQuitMessage.Call(0)
+		if time.Now().After(listenUntil) {
+			pPostQuitMessage.Call(0)
+		}
 		return 0
 	}
 	r, _, _ := pDefWindowProcW.Call(hwnd, m, wp, lp)
@@ -148,7 +154,12 @@ func wndProc(hwnd, m, wp, lp uintptr) uintptr {
 // listenKeys receives keyboard and mouse raw input from all devices for seconds
 // seconds. It only observes; it never blocks or changes keys.
 func listenKeys(seconds int, cb func(keyEvent)) error {
+	// The window, its timer and the message loop must stay on one OS thread;
+	// otherwise GetMessage may run on a thread that never sees our messages.
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
 	onKey = cb
+	listenUntil = time.Now().Add(time.Duration(seconds) * time.Second)
 	hinst, _, _ := pGetModuleHnd.Call(0)
 	cls := u16("NagaProbeRawInput")
 	wc := wndClassEx{
@@ -172,7 +183,7 @@ func listenKeys(seconds int, cb func(keyEvent)) error {
 	if r, _, err := pRegisterRawInputDevices.Call(uintptr(unsafe.Pointer(&rid[0])), 2, unsafe.Sizeof(rid[0])); r == 0 {
 		return err
 	}
-	pSetTimer.Call(hwnd, 1, uintptr(seconds*1000), 0)
+	pSetTimer.Call(hwnd, 1, 250, 0)
 	var m msg
 	for {
 		r, _, _ := pGetMessageW.Call(ptr(&m), 0, 0, 0)
@@ -181,6 +192,11 @@ func listenKeys(seconds int, cb func(keyEvent)) error {
 		}
 		pTranslateMessage.Call(ptr(&m))
 		pDispatchMessageW.Call(ptr(&m))
+		// WM_TIMER is only generated when the queue is empty, so a stream of
+		// mouse input could starve it: check the deadline here as well.
+		if time.Now().After(listenUntil) {
+			break
+		}
 	}
 	return nil
 }
