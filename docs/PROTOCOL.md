@@ -43,4 +43,15 @@ Working scheme (probe v3, full write test with **0 retries**): at least **40 ms 
 - Side keypad: hardware switch on the bottom, 123 / NUM. The keypad is a separate keyboard (`MI_01`), keys arrive as normal keyboard input:
   - 123: scan codes 02..0D = `1 2 3 4 5 6 7 8 9 0 - =`.
   - NUM: scan codes `4F 50 51 4B 4C 4D 47 48 49 52 4A 4E` = Num 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, Num −, Num + (seen with NumLock on).
-- Remapping is software only: identify the device by Raw Input, key on scan code (independent of the switch and NumLock), suppress the original with a low-level hook. Buttons 4/5 need the same approach on the mouse side (a low-level mouse hook cannot tell which mouse sent a click; Raw Input can).
+- Telling the keypad from the main keyboard in a low-level hook is **impossible** (hookprobe, 49/49 events): the WH_KEYBOARD_LL hook always runs ~1 ms *before* Raw Input reports the device, and a key blocked in the hook never reaches Raw Input at all.
+- Switching the keypad's HID collection to the generic "HID-compliant device" driver does not work: the node stays not started (DN_STARTED missing, no HID interface) and Windows puts `kbdhid` back on replug.
+- **Working solution (confirmed): WinUSB on the USB interface `USB\VID_1532&PID_0015&MI_01`** (installed with Zadig, "Razer Naga (Interface 1)"). Windows no longer sees the keypad as a keyboard; the app reads it directly:
+  - device interface GUID from the device's registry value `DeviceInterfaceGUIDs` (Zadig generates it), open with `FILE_FLAG_OVERLAPPED`, `WinUsb_Initialize`;
+  - interface 1, class 03/00/01, one endpoint: **interrupt IN 0x82**, max packet 9, interval 1;
+  - reports are 8-byte boot-keyboard reports, no report ID: `mods, 0, key1..key6` (HID usages). 123 mode: `1E..27` (1..0), `2D` (-), `2E` (=). NUM mode: `59..62` (Num1..Num0), `56` (Num−), `57` (Num+). All zero = released.
+  - Without the app running the keypad does nothing. Undo: Device Manager → Razer Naga (Interface 1) → uninstall with "delete driver" → replug.
+- The mouse interface `MI_00` stays on the stock HID mouse driver; the control channel (feature report) is unaffected. Buttons 4/5 and the left button are handled with a low-level mouse hook (single-mouse assumption; the hook cannot tell mice apart either).
+
+## Left button chatter (measured 2026-11-01)
+The user's left switch is worn. Single clicks (15, ~1/s): 6 of 15 arrived as 2–3 presses; chatter releases 6–81 ms. Intentional double-click gap: 46–92 ms — overlaps the chatter, so a release-time-only filter cannot work (T=85 ms: singles 15/15 but doubles 2/10).
+Two-rule filter, release held back by the app: merge if the release was shorter than **T≈45 ms**, or shorter than **G≈100 ms** when the preceding press lasted less than **H≈15–20 ms** (real presses are 50–115 ms). On the recorded data: singles 14/15, doubles 9/10 (no filter: 9/15 and 2/10). Data: `testdata/hookprobe-2026-11-01.log`, simulator `tools/chatter_sim.py`. The app calibrates T/H/G from 15 single + 8 double clicks.
