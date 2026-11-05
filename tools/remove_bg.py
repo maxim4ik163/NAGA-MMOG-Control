@@ -1,44 +1,50 @@
 # Removes the white background of the mouse photo: remove_bg.py <in.png> <out.png>
 # web/mouse.png = out.png cropped to (110, 60, 460, 480).
+#
+# The background is the white region touching the image border. Only the
+# outer ring of the mouse (up to 2 px from the background) gets partial
+# transparency: its observed colour is a mix of the mouse colour F (taken from
+# the nearest interior pixels) and white, C = a*F + (1-a)*255, so
+# a = (255 - C) / (255 - F) and the pixel keeps the colour F. Background
+# pixels are fully transparent, so no white fringe is left.
 import sys
 import cv2
 import numpy as np
 
-# 1. Загрузка исходного изображения (RGB)
 img = cv2.imread(sys.argv[1])
-h, w = img.shape[:2]
-
-# 2. Выделение внешнего белого фона через связные компоненты
 is_white = np.all(img >= 252, axis=-1).astype(np.uint8)
-num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(is_white)
+_, labels = cv2.connectedComponents(is_white)
+border = np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]])
+border = border[border > 0]
+bg_label = np.bincount(border).argmax()
+bg = (labels == bg_label).astype(np.uint8)
+fg = 1 - bg
 
-# Фон — крупнейшая компонента, соприкасающаяся с краями
-bg_label = 1
-bg_mask = (labels == bg_label).astype(np.uint8)
+dist_fg = cv2.distanceTransform(fg, cv2.DIST_L2, 5)  # distance from the background
+band = (fg == 1) & (dist_fg <= 2.0)
+interior = (fg == 1) & (dist_fg > 2.0)
 
-# 3. Расчёт альфа-маски и карты расстояний до границы
-fg_binary = (1 - bg_mask).astype(np.uint8)
-dist_bg = cv2.distanceTransform(bg_mask, cv2.DIST_L2, 5)
-dist_fg = cv2.distanceTransform(fg_binary, cv2.DIST_L2, 5)
+# mouse colour near the edge: spread interior colours outwards
+f = img.astype(np.float32)
+known = interior.astype(np.float32)
+acc = f * known[..., None]
+for _ in range(6):
+    k = np.ones((3, 3), np.float32)
+    s = cv2.filter2D(acc, -1, k, borderType=cv2.BORDER_REPLICATE)
+    n = cv2.filter2D(known, -1, k, borderType=cv2.BORDER_REPLICATE)
+    grow = (known == 0) & (n > 0)
+    acc[grow] = s[grow] / n[grow][:, None]
+    known[grow] = 1
+F = acc
 
-# Формируем плавный альфа-канал на стыке (антиалиасинг шириной ~1.5 px)
-alpha = np.clip((dist_bg - 0.5) / 1.5, 0.0, 1.0)
-alpha[dist_fg > 1.5] = 1.0
-alpha[dist_bg > 2.0] = 0.0
+alpha = np.zeros(img.shape[:2], np.float32)
+alpha[interior] = 1.0
+den = np.maximum(255.0 - F[band], 1.0)
+a = ((255.0 - f[band]) / den).mean(axis=1)
+alpha[band] = np.clip(a, 0.0, 1.0)
 
-# 4. De-matting: убираем белый ореол с пограничных пикселей
-# C_fg = (C_obs - (1 - alpha) * 255) / alpha
-img_float = img.astype(np.float32)
-alpha_3d = np.repeat(alpha[:, :, np.newaxis], 3, axis=2)
-
-# Корректируем цвет там, где есть частичная прозрачность
-mask_edge = (alpha > 0.01) & (alpha < 0.99)
-img_corrected = img_float.copy()
-img_corrected[mask_edge] = np.clip(
-    (img_float[mask_edge] - (1.0 - alpha_3d[mask_edge]) * 255.0) / np.maximum(alpha_3d[mask_edge], 1e-3),
-    0, 255
-)
-
-# 5. Сборка финального RGBA PNG
-rgba = np.dstack([img_corrected.astype(np.uint8), (alpha * 255).astype(np.uint8)])
+out = f.copy()
+out[band] = F[band]
+out[bg == 1] = 0
+rgba = np.dstack([np.clip(out, 0, 255).astype(np.uint8), (alpha * 255 + 0.5).astype(np.uint8)])
 cv2.imwrite(sys.argv[2], rgba)
