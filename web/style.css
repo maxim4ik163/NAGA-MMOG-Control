@@ -306,7 +306,7 @@ input.bad { border-color: var(--err) !important; }
 .tedit .row + .row { margin-top: 0; }
 .tedit p { margin: 0; }
 .mousepic { position: relative; width: 100%; max-width: 350px; margin: 10px auto 4px; }
-.mousepic img { display: block; width: 100%; height: auto; filter: drop-shadow(0 0 1px #6a717a); pointer-events: none; user-select: none;
+.mousepic img { display: block; width: 100%; height: auto; pointer-events: none; user-select: none;
   -webkit-mask-image: linear-gradient(#000 78%, transparent 99%); mask-image: linear-gradient(#000 78%, transparent 99%); }
 .mousepic svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .mousepic .hk { cursor: pointer; }
