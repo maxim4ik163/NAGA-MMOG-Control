@@ -282,39 +282,34 @@ function svg(tag, attrs, ...kids) {
   return el;
 }
 
+// Hotspots on web/mouse.png (350×420): [slot suffix, centre x, y, width, height, rotation]
+const PIC_KEYS = [
+  [1, 54, 232, 16, 22, -8], [2, 78, 220, 24, 23, -5], [3, 112, 219, 32, 24, -2],
+  [4, 49, 271, 16, 22, -8], [5, 74, 260, 24, 23, -5], [6, 111, 259, 32, 24, -2],
+  [7, 46, 307, 16, 22, -8], [8, 70, 299, 24, 23, -5], [9, 108, 300, 32, 24, -2],
+  [10, 45, 346, 16, 22, -8], [11, 67, 338, 24, 23, -5], [12, 105, 340, 32, 24, -2],
+];
+const PIC_SIDE = [["m:5", 90, 68, 22, 44, -28], ["m:4", 109, 118, 22, 50, -24]];
+
 // one clickable button of the picture
-function hotKey(slot, x, y, w, hgt, label, rot) {
+function hotKey(slot, cx, cy, w, hgt, rot) {
   const e = effective(slot, scope);
   const own = ownBinding(slot, scope);
-  const set = !!(own.kind || own.force);
-  const cls = "hk" + (sel === slot ? " sel" : "") + (set ? " own" : "") + (e.b.kind !== "default" ? " mapped" : "");
+  const cls = "hk" + (sel === slot ? " sel" : "") + (own.kind || own.force ? " own" : "") + (e.b.kind !== "default" ? " mapped" : "");
   const tip = (slot.startsWith("m:") ? L("Кнопка ", "Button ") + slot.slice(2) : L("Кнопка ", "Button ") + slotNum(slot) + " (" + (layer === "123" ? "123" : "NUM") + ")") + ": " + bindingText(e.b, slot);
-  return svg("g", { class: cls, transform: rot ? `rotate(${rot} ${x + w / 2} ${y + hgt / 2})` : null, onclick: () => { sel = slot; capture = null; renderView(); } },
+  return svg("g", { class: cls, transform: `rotate(${rot} ${cx} ${cy})`, onclick: () => { sel = slot; capture = null; renderView(); } },
     svg("title", {}, tip),
-    svg("rect", { x, y, width: w, height: hgt, rx: Math.min(6, hgt / 2.6) }),
-    svg("text", { x: x + w / 2, y: y + hgt / 2 + 4, "text-anchor": "middle" }, label));
+    svg("rect", { x: cx - w / 2, y: cy - hgt / 2, width: w, height: hgt, rx: Math.min(6, w / 2.5) }),
+    svg("circle", { class: "mk", cx: cx + w / 2 - 3, cy: cy - hgt / 2 + 3, r: 2.6 }));
 }
 
 function mousePicture() {
-  const body = "M30 150 C22 118 42 92 82 80 C142 62 202 28 264 32 C320 36 348 84 342 140 C339 172 320 193 290 196 L62 196 C40 196 32 178 30 150 Z";
-  const keys = [];
-  const kw = 28, kh = 22, gap = 4, x0 = 154, y0 = 82;
-  for (let i = 0; i < 12; i++) {
-    const c = i % 3, r = Math.floor(i / 3);
-    keys.push(hotKey(layer + ":" + (i + 1), x0 + c * (kw + gap), y0 + r * (kh + gap), kw, kh, i + 1));
-  }
-  return h("div", { class: "mousepic" }, svg("svg", { viewBox: "0 0 370 214", role: "img", "aria-label": L("Мышь Razer Naga, вид слева", "Razer Naga mouse, left side") },
-    svg("defs", {}, svg("linearGradient", { id: "nbody", x1: 0, y1: 0, x2: 0, y2: 1 },
-      svg("stop", { offset: "0", "stop-color": "#2f3338" }), svg("stop", { offset: "1", "stop-color": "#17191c" }))),
-    svg("path", { d: body, class: "mbody", fill: "url(#nbody)" }),
-    svg("path", { d: "M42 112 C90 92 150 72 210 52", class: "mseam" }),
-    svg("path", { d: "M40 150 C80 156 120 160 150 192", class: "mseam" }),
-    svg("rect", { x: 116, y: 58, width: 24, height: 12, rx: 6, class: "mwheel", transform: "rotate(-17 128 64)" }),
-    svg("rect", { x: 146, y: 74, width: 104, height: 108, rx: 12, class: "mplate" }),
-    svg("text", { x: 198, y: 205, class: "mcap", "text-anchor": "middle" }, L("слой ", "layer ") + (layer === "123" ? "123" : "NUM")),
-    hotKey("m:4", 52, 84, 24, 12, "4", -22),
-    hotKey("m:5", 80, 74, 24, 12, "5", -18),
-    ...keys));
+  return [h("div", { class: "mousepic" },
+    h("img", { src: "mouse.png", alt: L("Мышь Razer Naga", "Razer Naga mouse"), draggable: "false" }),
+    svg("svg", { viewBox: "0 0 350 420" },
+      ...PIC_SIDE.map(([slot, x, y, w, hh, r]) => hotKey(slot, x, y, w, hh, r)),
+      ...PIC_KEYS.map(([n, x, y, w, hh, r]) => hotKey(layer + ":" + n, x, y, w, hh, r)))),
+    h("div", { class: "piccap" }, L("Слой ", "Layer ") + (layer === "123" ? "123" : "NUM") + L(" · зелёная точка — кнопка переназначена · клик выбирает кнопку", " · green dot — remapped · click to pick a button"))];
 }
 
 function renderButtons(v) {

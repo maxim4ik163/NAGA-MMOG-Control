@@ -305,21 +305,17 @@ input.bad { border-color: var(--err) !important; }
 .tedit { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
 .tedit .row + .row { margin-top: 0; }
 .tedit p { margin: 0; }
-.mousepic { margin: 10px 0 2px; }
-.mousepic svg { display: block; width: 100%; height: auto; max-width: 380px; margin: 0 auto; }
-.mousepic .mbody { stroke: #3c4148; stroke-width: 1.5; }
-.mousepic .mseam { fill: none; stroke: #0c0d0f; stroke-width: 1.5; opacity: .8; }
-.mousepic .mwheel { fill: #111; stroke: var(--accent2); stroke-width: 1.5; }
-.mousepic .mplate { fill: #101113; stroke: #353a41; stroke-width: 1; }
-.mousepic .mcap { fill: var(--muted); font-size: 11px; }
+.mousepic { position: relative; width: 100%; max-width: 350px; margin: 10px auto 4px; }
+.mousepic img { display: block; width: 100%; height: auto; filter: drop-shadow(0 0 1px #6a717a); pointer-events: none; user-select: none;
+  -webkit-mask-image: linear-gradient(#000 78%, transparent 99%); mask-image: linear-gradient(#000 78%, transparent 99%); }
+.mousepic svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .mousepic .hk { cursor: pointer; }
-.mousepic .hk rect { fill: #2a2e34; stroke: #4a5058; stroke-width: 1; transition: fill .12s; }
-.mousepic .hk text { fill: var(--muted); font-size: 11px; font-weight: 700; pointer-events: none; }
-.mousepic .hk.mapped rect { fill: #24321f; stroke: #3d6b33; }
-.mousepic .hk.mapped text { fill: var(--text); }
-.mousepic .hk:hover rect { stroke: #8a929c; }
-.mousepic .hk.sel rect { stroke: var(--accent); stroke-width: 2; filter: drop-shadow(0 0 4px var(--accent)); }
-.mousepic .hk.sel text { fill: var(--accent); }
+.mousepic .hk rect { fill: transparent; stroke: transparent; stroke-width: 2; }
+.mousepic .hk:hover rect { stroke: #ffffffaa; fill: #ffffff14; }
+.mousepic .hk.sel rect { stroke: var(--accent); fill: #44d62c22; filter: drop-shadow(0 0 4px var(--accent)); }
+.mousepic .hk .mk { fill: transparent; pointer-events: none; }
+.mousepic .hk.mapped .mk { fill: var(--accent); stroke: #000; stroke-width: 1; }
+.piccap { text-align: center; font-size: 12px; color: var(--muted); margin: -6px 0 8px; }
 .pad { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .mrow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .pkey { min-width: 0; }
