@@ -10,7 +10,7 @@ seed = json.loads(Path(sys.argv[1]).read_text())
 if len(sys.argv) > 4 and sys.argv[4] == "noprofiles":
     seed["data"]["profiles"] = None
 PORT = int(sys.argv[2])
-status = {"version": "0.1.0", "mouse": True, "fw": "1.13", "devErr": "", "dpi": 1400, "poll": 1000,
+status = {"version": "0.2.0", "mouse": True, "fw": "1.13", "devErr": "", "dpi": 1400, "poll": 1000,
           "stage": 1, "stages": seed["data"]["settings"]["dpi"]["stages"], "stagesFrom": "global", "hold": 0,
           "pad": sys.argv[3] if len(sys.argv) > 3 else "ready", "padErr": "", "padService": "kbdhid",
           "foreground": "acad.exe", "active": "pcad", "activeName": "AutoCAD", "hook": True,
@@ -27,6 +27,7 @@ class H(SimpleHTTPRequestHandler):
     def do_GET(self):
         p = self.path.split("?")[0]
         if p == "/api/state": return self.send_json(state)
+        if p == "/api/layouts": return self.send_json([{"id": "4090409", "name": "Английский (США)"}, {"id": "4190419", "name": "Русский"}])
         if p == "/api/programs": return self.send_json(["acad.exe", "chrome.exe", "kompas.exe", "solidworks.exe"])
         if p == "/api/events":
             self.send_response(200); self.send_header("Content-Type", "text/event-stream"); self.end_headers()
@@ -38,7 +39,16 @@ class H(SimpleHTTPRequestHandler):
     def do_POST(self):
         p = self.path.split("?")[0]
         n = int(self.headers.get("Content-Length", 0)); body = json.loads(self.rfile.read(n) or b"null")
-        if p == "/api/save": state["data"] = body; state["lang"] = body["settings"].get("language", "ru"); return self.send_json(state)
+        if p == "/api/save":
+            for m in [body["settings"]["global"]] + [x["bindings"] for x in body["profiles"]]:
+                for b in m.values():
+                    if b.get("kind") == "text" and b.get("secret") and b.get("text"):
+                        b["enc"] = "dpapi:mock"; b["text"] = ""
+            state["data"] = body; state["lang"] = body["settings"].get("language", "ru")
+            Path("/tmp/naga-saved.json").write_text(json.dumps(body))
+            return self.send_json(state)
+        if p == "/api/layouts": return self.send_json([{"id": "4090409", "name": "Английский (США)"}, {"id": "4190419", "name": "Русский"}])
+        if p == "/api/osd-test": return self.send_json(state)
         if p == "/api/calib/start": status["calibPhase"] = body["phase"]; status["calibCount"] = 4; return self.send_json(state)
         if p == "/api/calib/stop":
             ph = status["calibPhase"]; status["calibPhase"] = ""

@@ -45,6 +45,29 @@ const (
 	KindDPIDown  = "dpi-down"  // previous DPI stage
 	KindDPICycle = "dpi-cycle" // next stage, wraps around
 	KindDPIHold  = "dpi-hold"  // sniper: stage Stage while held
+	KindMacro    = "macro"     // a macro from the Macros tab
+	KindText     = "text"      // type a text (optionally a protected secret), then a key
+	KindRun      = "run"       // start a program, open a document, folder or URL
+	KindCommand  = "command"   // a command line as in the Win+R box
+)
+
+// Ways of typing a text.
+const (
+	TextUnicode = "unicode" // characters as Unicode input: independent of the keyboard layout
+	TextKeys    = "keys"    // real key presses in a given layout (for apps that ignore Unicode input)
+)
+
+// Window of a started program.
+const (
+	ShowNormal = ""
+	ShowMin    = "min"
+	ShowMax    = "max"
+	ShowHidden = "hidden"
+)
+
+const (
+	maxText      = 2000 // characters
+	maxCharDelay = 500  // ms
 )
 
 type Binding struct {
@@ -53,6 +76,81 @@ type Binding struct {
 	Stage int    `json:"stage,omitempty"` // DPI stage (1-based) for dpi-hold
 	// Force (global bindings only): wins over any profile.
 	Force bool `json:"force,omitempty"`
+
+	MacroID string `json:"macroId,omitempty"` // KindMacro
+
+	// KindText. A secret is kept only encrypted for the current Windows user
+	// (Enc, DPAPI) and never sent back as plain text; Text then carries a new
+	// value from the UI only.
+	Text      string `json:"text,omitempty"`
+	Enc       string `json:"enc,omitempty"`
+	Secret    bool   `json:"secret,omitempty"`
+	Method    string `json:"method,omitempty"`    // TextUnicode or TextKeys
+	Layout    string `json:"layout,omitempty"`    // TextKeys: keyboard layout (HKL, hex); "" = the window's current one
+	After     string `json:"after,omitempty"`     // key combination pressed after the text, e.g. "Enter"
+	CharDelay int    `json:"charDelay,omitempty"` // ms between characters
+
+	// KindRun: a program, document, folder or URL with arguments.
+	Path string `json:"path,omitempty"`
+	Args string `json:"args,omitempty"`
+	// KindCommand: one line as typed into Win+R ("%LOCALAPPDATA%", "cmd /c …").
+	Cmd string `json:"cmd,omitempty"`
+	// KindRun, KindCommand: ShowNormal, ShowMin, ShowMax or ShowHidden.
+	Show string `json:"show,omitempty"`
+}
+
+// ---------------------------------------------------------------------------
+// Macros (played by the app)
+
+// Macro modes, as in SM809 Control.
+const (
+	MacroHold   = 1 // repeat while the button is held
+	MacroTimes  = 2 // run Repeat times
+	MacroToggle = 3 // repeat until the button is pressed again
+)
+
+// Macro event types.
+const (
+	EvDown  = "keydown" // press a key or a mouse button (Key)
+	EvUp    = "keyup"   // release it
+	EvDelay = "delay"   // only wait (Delay)
+	EvMove  = "move"    // move the cursor by DX, DY pixels
+	EvWheel = "wheel"   // scroll Wheel notches (+ = up / away)
+)
+
+const (
+	maxMacroEvents = 5000
+	maxMacroDelay  = 60000 // ms
+	maxMacroRepeat = 1000
+)
+
+// Mouse buttons a macro can press (names next to the key names).
+var macroMouseButtons = []string{"MouseLeft", "MouseRight", "MouseMiddle", "MouseBack", "MouseForward"}
+
+func isMacroMouse(name string) bool {
+	for _, b := range macroMouseButtons {
+		if strings.EqualFold(b, name) {
+			return true
+		}
+	}
+	return false
+}
+
+type MacroEvent struct {
+	Type  string `json:"type"`
+	Key   string `json:"key,omitempty"`   // key name (as in combinations) or Mouse*
+	Delay int    `json:"delay"`           // ms before the event
+	DX    int    `json:"dx,omitempty"`    // EvMove
+	DY    int    `json:"dy,omitempty"`    // EvMove
+	Wheel int    `json:"wheel,omitempty"` // EvWheel
+}
+
+type Macro struct {
+	ID     string       `json:"id"`
+	Name   string       `json:"name"`
+	Mode   int          `json:"mode"`   // MacroHold, MacroTimes, MacroToggle
+	Repeat int          `json:"repeat"` // MacroTimes
+	Events []MacroEvent `json:"events"`
 }
 
 type DPISet struct {
@@ -124,16 +222,22 @@ type Settings struct {
 
 	KeyRepeat bool `json:"keyRepeat"` // typematic repeat for held single keys
 
+	// FGCheckMs: how often the foreground window is checked in addition to
+	// the Windows foreground event (for windows that do not raise it).
+	FGCheckMs int `json:"fgCheckMs"`
+
 	Language string `json:"language"`
 	Debug    bool   `json:"debug"`
 }
 
-// dataVersion 2 added Chatter.D.
-const dataVersion = 2
+// dataVersion 2 added Chatter.D; 3 added macros, text/run/command actions,
+// Settings.FGCheckMs.
+const dataVersion = 3
 
 type Data struct {
 	Version  int        `json:"version"`
 	Profiles []*Profile `json:"profiles"`
+	Macros   []*Macro   `json:"macros"`
 	Settings Settings   `json:"settings"`
 }
 
@@ -161,6 +265,7 @@ func defaultData() *Data {
 			OSDDPI:  true, OSDProfile: true,
 			Popup:     defaultPopup(),
 			KeyRepeat: true,
+			FGCheckMs: defaultFGCheckMs,
 		},
 	}
 }
@@ -171,6 +276,10 @@ func defaultData() *Data {
 const (
 	minDPI = 100
 	maxDPI = 5600
+
+	defaultFGCheckMs = 2000
+	minFGCheckMs     = 250
+	maxFGCheckMs     = 30000
 )
 
 func validateDPISet(s *DPISet) error {
@@ -189,18 +298,41 @@ func validateDPISet(s *DPISet) error {
 }
 
 func validateBinding(slot string, b *Binding, global bool) error {
+	at := slotName(slot)
 	switch b.Kind {
 	case KindInherit, KindDefault, KindDisable, KindDPIUp, KindDPIDown, KindDPICycle:
 	case KindKeys:
 		if _, err := parseCombo(b.Keys); err != nil {
-			return fmt.Errorf("%s: %v", slotName(slot), err)
+			return fmt.Errorf("%s: %v", at, err)
 		}
 	case KindDPIHold:
 		if b.Stage < 1 || b.Stage > 8 {
-			return fmt.Errorf(T("%s: неверная ступень DPI", "%s: invalid DPI stage"), slotName(slot))
+			return fmt.Errorf(T("%s: неверная ступень DPI", "%s: invalid DPI stage"), at)
+		}
+	case KindMacro:
+		if b.MacroID == "" {
+			return fmt.Errorf(T("%s: макрос не выбран", "%s: no macro selected"), at)
+		}
+	case KindText:
+		if err := validateText(at, b); err != nil {
+			return err
+		}
+	case KindRun:
+		b.Path = strings.Trim(strings.TrimSpace(b.Path), `"`)
+		b.Args = strings.TrimSpace(b.Args)
+		if b.Path == "" {
+			return fmt.Errorf(T("%s: не указано, что запускать", "%s: nothing to start"), at)
+		}
+	case KindCommand:
+		b.Cmd = strings.TrimSpace(b.Cmd)
+		if b.Cmd == "" {
+			return fmt.Errorf(T("%s: команда не задана", "%s: no command"), at)
+		}
+		if len([]rune(b.Cmd)) > 2000 {
+			return fmt.Errorf(T("%s: команда слишком длинная", "%s: the command is too long"), at)
 		}
 	default:
-		return fmt.Errorf(T("%s: неизвестное действие %q", "%s: unknown action %q"), slotName(slot), b.Kind)
+		return fmt.Errorf(T("%s: неизвестное действие %q", "%s: unknown action %q"), at, b.Kind)
 	}
 	if !global {
 		b.Force = false
@@ -210,6 +342,72 @@ func validateBinding(slot string, b *Binding, global bool) error {
 	} else {
 		c, _ := parseCombo(b.Keys)
 		b.Keys = c.String()
+	}
+	if b.Kind != KindDPIHold {
+		b.Stage = 0
+	}
+	if b.Kind != KindMacro {
+		b.MacroID = ""
+	}
+	if b.Kind != KindText {
+		b.Text, b.Enc, b.Secret, b.Method, b.Layout, b.After, b.CharDelay = "", "", false, "", "", "", 0
+	}
+	if b.Kind != KindRun {
+		b.Path, b.Args = "", ""
+	}
+	if b.Kind != KindCommand {
+		b.Cmd = ""
+	}
+	if b.Kind == KindRun || b.Kind == KindCommand {
+		switch b.Show {
+		case ShowNormal, ShowMin, ShowMax, ShowHidden:
+		default:
+			b.Show = ShowNormal
+		}
+	} else {
+		b.Show = ""
+	}
+	return nil
+}
+
+// validateText checks and normalises a text binding.
+func validateText(at string, b *Binding) error {
+	if b.Text == "" && b.Enc == "" {
+		return fmt.Errorf(T("%s: текст не задан", "%s: no text"), at)
+	}
+	if len([]rune(b.Text)) > maxText {
+		return fmt.Errorf(T("%s: текст длиннее %d символов", "%s: the text is longer than %d characters"), at, maxText)
+	}
+	switch b.Method {
+	case "":
+		b.Method = TextUnicode
+	case TextUnicode, TextKeys:
+	default:
+		return fmt.Errorf(T("%s: неизвестный способ ввода %q", "%s: unknown input method %q"), at, b.Method)
+	}
+	if b.Method != TextKeys {
+		b.Layout = ""
+	} else if b.Layout != "" {
+		if _, err := strconv.ParseUint(b.Layout, 16, 64); err != nil || len(b.Layout) > 16 {
+			return fmt.Errorf(T("%s: неверная раскладка %q", "%s: invalid layout %q"), at, b.Layout)
+		}
+		b.Layout = strings.ToUpper(b.Layout)
+	}
+	if strings.TrimSpace(b.After) != "" {
+		c, err := parseCombo(b.After)
+		if err != nil {
+			return fmt.Errorf(T("%s: клавиша после текста: %v", "%s: key after the text: %v"), at, err)
+		}
+		b.After = c.String()
+	} else {
+		b.After = ""
+	}
+	b.CharDelay = clampInt(b.CharDelay, 0, maxCharDelay)
+	if !b.Secret && b.Text == "" { // a secret was turned off without a new text
+		return fmt.Errorf(T("%s: введите текст заново — сохранённый секрет не показывается", "%s: enter the text again — a stored secret is never shown"), at)
+	}
+	if !b.Secret {
+		b.Enc = ""
 	}
 	return nil
 }
@@ -301,6 +499,155 @@ func validateSettings(s *Settings) error {
 	if s.Popup.Width == 0 {
 		s.Popup = defaultPopup()
 	}
+	validatePopup(&s.Popup)
+	if s.FGCheckMs == 0 {
+		s.FGCheckMs = defaultFGCheckMs
+	}
+	s.FGCheckMs = clampInt(s.FGCheckMs, minFGCheckMs, maxFGCheckMs)
+	return nil
+}
+
+var popupPositions = []string{"bottom-center", "top-center", "center", "top-left", "top-right", "bottom-left", "bottom-right", "cursor"}
+
+// validatePopup keeps the popup style within sane limits.
+func validatePopup(p *PopupStyle) {
+	ok := false
+	for _, v := range popupPositions {
+		ok = ok || p.Position == v
+	}
+	if !ok {
+		p.Position = "bottom-center"
+	}
+	p.OffsetX, p.OffsetY = clampInt(p.OffsetX, -4000, 4000), clampInt(p.OffsetY, -4000, 4000)
+	p.Width, p.Height = clampInt(p.Width, 60, 2000), clampInt(p.Height, 30, 2000)
+	p.CornerRadius = clampInt(p.CornerRadius, 0, 500)
+	p.Opacity = clampInt(p.Opacity, 0, 255)
+	p.FontSize, p.CaptionSize = clampInt(p.FontSize, 6, 300), clampInt(p.CaptionSize, 6, 200)
+	p.DurationMs, p.FadeMs = clampInt(p.DurationMs, 100, 60000), clampInt(p.FadeMs, 0, 10000)
+	if strings.TrimSpace(p.Font) == "" {
+		p.Font = "Segoe UI"
+	}
+	d := defaultPopup()
+	for _, c := range []struct {
+		v   *string
+		def string
+	}{{&p.Background, d.Background}, {&p.TextColor, d.TextColor}, {&p.CaptionColor, d.CaptionColor}, {&p.AccentColor, d.AccentColor}, {&p.DotColor, d.DotColor}} {
+		if !validColor(*c.v) {
+			*c.v = c.def
+		}
+	}
+}
+
+func validColor(s string) bool {
+	if len(s) != 7 || s[0] != '#' {
+		return false
+	}
+	_, err := strconv.ParseUint(s[1:], 16, 32)
+	return err == nil
+}
+
+// validateMacro normalises a macro.
+func validateMacro(m *Macro) error {
+	m.Name = strings.TrimSpace(m.Name)
+	if m.Name == "" {
+		return errors.New(T("у макроса должно быть имя", "the macro needs a name"))
+	}
+	switch m.Mode {
+	case MacroHold, MacroTimes, MacroToggle:
+	default:
+		m.Mode = MacroTimes
+	}
+	m.Repeat = clampInt(m.Repeat, 1, maxMacroRepeat)
+	if len(m.Events) > maxMacroEvents {
+		return fmt.Errorf(T("«%s»: больше %d действий", "%q: more than %d actions"), m.Name, maxMacroEvents)
+	}
+	if m.Events == nil {
+		m.Events = []MacroEvent{}
+	}
+	for i := range m.Events {
+		e := &m.Events[i]
+		e.Delay = clampInt(e.Delay, 0, maxMacroDelay)
+		switch e.Type {
+		case EvDown, EvUp:
+			name, ok := macroKeyName(e.Key)
+			if !ok {
+				return fmt.Errorf(T("«%s», действие %d: неизвестная клавиша %q", "%q, action %d: unknown key %q"), m.Name, i+1, e.Key)
+			}
+			e.Key = name
+			e.DX, e.DY, e.Wheel = 0, 0, 0
+		case EvDelay:
+			e.Key, e.DX, e.DY, e.Wheel = "", 0, 0, 0
+		case EvMove:
+			e.Key, e.Wheel = "", 0
+			e.DX, e.DY = clampInt(e.DX, -10000, 10000), clampInt(e.DY, -10000, 10000)
+		case EvWheel:
+			e.Key, e.DX, e.DY = "", 0, 0
+			e.Wheel = clampInt(e.Wheel, -100, 100)
+		default:
+			return fmt.Errorf(T("«%s», действие %d: неизвестный тип %q", "%q, action %d: unknown type %q"), m.Name, i+1, e.Type)
+		}
+	}
+	return nil
+}
+
+// macroKeyName: the normalised name of a key or mouse button for macros.
+func macroKeyName(s string) (string, bool) {
+	for _, b := range macroMouseButtons {
+		if strings.EqualFold(b, strings.TrimSpace(s)) {
+			return b, true
+		}
+	}
+	k, ok := keyByName[strings.ToLower(strings.TrimSpace(s))]
+	if !ok {
+		return "", false
+	}
+	return k.Name, true
+}
+
+// macroUse: where a macro is assigned ("" = nowhere).
+func macroUse(d *Data, id string) string {
+	for _, slot := range allSlots() {
+		if b, ok := d.Settings.Global[slot]; ok && b.Kind == KindMacro && b.MacroID == id {
+			return T("Глобальные", "Global") + ", " + slotName(slot)
+		}
+	}
+	for _, p := range d.Profiles {
+		for _, slot := range allSlots() {
+			if b, ok := p.Bindings[slot]; ok && b.Kind == KindMacro && b.MacroID == id {
+				return p.Name + ", " + slotName(slot)
+			}
+		}
+	}
+	return ""
+}
+
+func (d *Data) macro(id string) *Macro {
+	for _, m := range d.Macros {
+		if m.ID == id {
+			return m
+		}
+	}
+	return nil
+}
+
+// checkMacroRefs: every macro binding must point to an existing macro.
+func checkMacroRefs(d *Data) error {
+	check := func(owner string, m map[string]Binding) error {
+		for _, slot := range allSlots() {
+			if b, ok := m[slot]; ok && b.Kind == KindMacro && d.macro(b.MacroID) == nil {
+				return fmt.Errorf(T("%s, %s: макрос не найден", "%s, %s: the macro does not exist"), owner, slotName(slot))
+			}
+		}
+		return nil
+	}
+	if err := check(T("Глобальные", "Global"), d.Settings.Global); err != nil {
+		return err
+	}
+	for _, p := range d.Profiles {
+		if err := check(p.Name, p.Bindings); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -308,6 +655,22 @@ func validateSettings(s *Settings) error {
 func validateData(d *Data) error {
 	if d.Profiles == nil {
 		d.Profiles = []*Profile{} // the UI expects a list, never null
+	}
+	if d.Macros == nil {
+		d.Macros = []*Macro{}
+	}
+	mids := map[string]bool{}
+	for _, m := range d.Macros {
+		if m == nil {
+			return errors.New(T("пустой макрос", "empty macro"))
+		}
+		if err := validateMacro(m); err != nil {
+			return err
+		}
+		if m.ID == "" || mids[m.ID] {
+			m.ID = newID("m")
+		}
+		mids[m.ID] = true
 	}
 	owner := map[string]string{}
 	ids := map[string]bool{}
@@ -329,7 +692,10 @@ func validateData(d *Data) error {
 			owner[e] = p.Name
 		}
 	}
-	return validateSettings(&d.Settings)
+	if err := validateSettings(&d.Settings); err != nil {
+		return err
+	}
+	return checkMacroRefs(d)
 }
 
 func clampInt(v, lo, hi int) int {

@@ -10,7 +10,7 @@ with sync_playwright() as p:
     pg.on("pageerror", lambda e: errors.append(str(e)))
     pg.on("console", lambda m: m.type == "error" and errors.append(m.text))
     pg.goto(url); pg.wait_for_timeout(800)
-    tabs = ["buttons", "profiles", "mouse", "chatter", "settings"]
+    tabs = ["buttons", "profiles", "macros", "mouse", "chatter", "settings"]
     for i, t in enumerate(tabs):
         pg.locator("#tabs button").nth(i).click(); pg.wait_for_timeout(300)
         pg.screenshot(path=f"{out}/{i}-{t}.png", full_page=False)
@@ -23,7 +23,7 @@ with sync_playwright() as p:
     pg.locator(".pkey").nth(4).click(); pg.wait_for_timeout(200)
     pg.screenshot(path=f"{out}/6-buttons-num.png")
     # calibration wizard
-    pg.locator("#tabs button").nth(3).click(); pg.wait_for_timeout(200)
+    pg.locator("#tabs button").nth(4).click(); pg.wait_for_timeout(200)
     pg.get_by_role("button", name="Начать", exact=True).click(); pg.wait_for_timeout(1300)
     pg.screenshot(path=f"{out}/7-calib-rec.png")
     pg.get_by_role("button", name="Готово", exact=True).click(); pg.wait_for_timeout(300)

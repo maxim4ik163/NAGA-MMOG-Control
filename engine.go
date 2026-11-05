@@ -16,6 +16,7 @@ type heldAction struct {
 	kind  string
 	combo Combo
 	rep   *repeater
+	run   *macroRun // a macro started by this press
 }
 
 type Engine struct {
@@ -30,7 +31,8 @@ type Engine struct {
 	stage  int
 	hold   int // DPI while a "hold" button is pressed, 0 = none
 
-	held map[string]*heldAction
+	held   map[string]*heldAction
+	macros map[string]*macroRun // macros started per button (still running or finished)
 
 	// device
 	ctl     *controlDev
@@ -49,6 +51,7 @@ type Engine struct {
 
 	onChange func()
 	onOSD    func(osdContent)
+	onError  func(string) // a problem with an action (shown as a notification)
 }
 
 func newEngine(st *Store) *Engine {
@@ -57,6 +60,7 @@ func newEngine(st *Store) *Engine {
 		store:  st,
 		ownExe: normalizeExe(filepath.Base(exe)),
 		held:   map[string]*heldAction{},
+		macros: map[string]*macroRun{},
 		wake:   make(chan struct{}, 1),
 		padDec: newKeypadDecoder(),
 		calib:  map[string][]clickEvent{},
@@ -187,6 +191,9 @@ func (e *Engine) handleKey(ev KeyEvent) {
 			return
 		}
 		delete(e.held, ev.Slot)
+		if h.run != nil && h.run.mode == MacroHold {
+			h.run.halt() // "while held"
+		}
 		switch h.kind {
 		case KindKeys, KindDefault:
 			if h.rep != nil {
@@ -201,6 +208,15 @@ func (e *Engine) handleKey(ev KeyEvent) {
 	}
 	if e.held[ev.Slot] != nil {
 		return // already down (repeated report)
+	}
+	// "repeat until pressed again": the second press only stops the macro;
+	// a macro still running its N times ignores presses
+	if run := e.macros[ev.Slot]; run != nil && run.running() && run.mode != MacroHold {
+		if run.mode == MacroToggle {
+			run.halt()
+		}
+		e.held[ev.Slot] = &heldAction{kind: KindDisable}
+		return
 	}
 	b, _ := resolve(e.data, e.active, ev.Slot)
 	h := &heldAction{kind: b.Kind}
@@ -227,6 +243,27 @@ func (e *Engine) handleKey(ev KeyEvent) {
 			h.rep = &repeater{}
 			h.rep.start(c)
 		}
+	case KindMacro:
+		m := e.data.macro(b.MacroID)
+		if m == nil || len(m.Events) == 0 {
+			break
+		}
+		mc := *m
+		mc.Events = append([]MacroEvent(nil), m.Events...)
+		run := newMacroRun(mc.Mode)
+		e.macros[ev.Slot] = run
+		h.run = run
+		logf("%s → macro %s", ev.Slot, mc.Name)
+		go playMacro(&mc, run)
+	case KindText:
+		logf("%s → text", ev.Slot)
+		go typeText(b, e.report)
+	case KindRun:
+		logf("%s → run %s", ev.Slot, b.Path)
+		launch(func() { runProgram(b, e.report) })
+	case KindCommand:
+		logf("%s → command %s", ev.Slot, b.Cmd)
+		launch(func() { runCommand(b, e.report) })
 	case KindDPIUp, KindDPIDown, KindDPICycle:
 		set := dpiSet(e.data, e.active)
 		e.stage = nextStage(b.Kind, e.stage, len(set.Stages))
@@ -270,10 +307,23 @@ func (e *Engine) setStage(i int) {
 	e.changed()
 }
 
+// report shows a problem with an action.
+func (e *Engine) report(s string) {
+	logf("action: %s", s)
+	if e.onError != nil {
+		e.onError(s)
+	}
+}
+
 // releaseAll lets go of everything (keypad gone, exit).
 func (e *Engine) releaseAll() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	for _, run := range e.macros {
+		if run.mode == MacroHold {
+			run.halt()
+		}
+	}
 	for slot, h := range e.held {
 		if h.rep != nil {
 			h.rep.halt()
@@ -467,6 +517,21 @@ func (e *Engine) readPad(rd *padReader) {
 }
 
 func (e *Engine) shutdown() {
+	e.mu.Lock()
+	var runs []*macroRun
+	for _, run := range e.macros {
+		run.halt()
+		runs = append(runs, run)
+	}
+	e.mu.Unlock()
+	// let stopped macros release the keys they hold
+	deadline := time.Now().Add(300 * time.Millisecond)
+	for _, run := range runs {
+		select {
+		case <-run.done:
+		case <-time.After(time.Until(deadline)):
+		}
+	}
 	e.releaseAll()
 	e.mu.Lock()
 	rd := e.padRd

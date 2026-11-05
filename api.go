@@ -186,6 +186,9 @@ func (a *API) handle(path string, body json.RawMessage) (any, error) {
 		if err := validateData(&d); err != nil {
 			return nil, err
 		}
+		if err := sealSecrets(&d); err != nil {
+			return nil, err
+		}
 		a.store.mu.Lock()
 		d.Version = dataVersion
 		a.store.data = &d
@@ -201,8 +204,12 @@ func (a *API) handle(path string, body json.RawMessage) (any, error) {
 		a.eng.reload()
 		if a.uiCall != nil {
 			a.uiCall(updateTray)
+			a.uiCall(applyFGTimer)
 		}
 		return a.state(), nil
+
+	case "layouts":
+		return keyboardLayouts(), nil
 
 	case "stage":
 		var v struct {
@@ -253,10 +260,35 @@ func (a *API) handle(path string, body json.RawMessage) (any, error) {
 		return a.eng.calibResult()
 
 	case "osd-test":
+		// preview of the popup with a style that may not be saved yet
+		var v struct {
+			Kind  string      `json:"kind"`
+			Style *PopupStyle `json:"style"`
+		}
+		_ = json.Unmarshal(body, &v)
 		a.eng.mu.Lock()
-		set := dpiSet(a.eng.data, a.eng.active)
-		a.eng.showDPILocked(set)
+		style := a.eng.data.Settings.Popup
+		if v.Style != nil {
+			style = *v.Style
+			validatePopup(&style)
+		}
+		accent := parseColor(style.AccentColor, 0x44d62c)
+		var c osdContent
+		if v.Kind == "profile" {
+			name := T("Мой профиль", "My profile")
+			if a.eng.active != nil {
+				name = a.eng.active.Name
+			}
+			c = osdContent{Caption: T("Профиль", "Profile"), Value: name, Accent: accent, Style: style}
+		} else {
+			set := dpiSet(a.eng.data, a.eng.active)
+			i := clampInt(a.eng.stage, 0, len(set.Stages)-1)
+			c = osdContent{Caption: "DPI", Value: fmt.Sprint(set.Stages[i]), Dots: len(set.Stages), Active: i, Accent: accent, Style: style}
+		}
 		a.eng.mu.Unlock()
+		if a.uiCall != nil {
+			a.uiCall(func() { osdShow(c) })
+		}
 		return a.state(), nil
 
 	case "programs":

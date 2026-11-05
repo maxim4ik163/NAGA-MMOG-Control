@@ -330,3 +330,118 @@ func TestDragDefaultAndMigration(t *testing.T) {
 		t.Fatalf("migration: %+v v%d", c, s.data.Version)
 	}
 }
+
+func TestValidateNewActions(t *testing.T) {
+	d := defaultData()
+	d.Macros = []*Macro{{ID: "m1", Name: " Combo ", Mode: 9, Repeat: 0, Events: []MacroEvent{
+		{Type: EvDown, Key: "ctrl", Delay: -5}, {Type: EvUp, Key: "mouseleft"}, {Type: EvMove, DX: 50000, Key: "x"}, {Type: EvWheel, Wheel: -3}, {Type: EvDelay, Delay: 999999}}}}
+	d.Settings.Global["123:1"] = Binding{Kind: KindMacro, MacroID: "m1", Keys: "A"}
+	d.Settings.Global["123:2"] = Binding{Kind: KindText, Text: "Привет\n", After: "enter", CharDelay: 9999, Layout: "419", Keys: "B"}
+	d.Settings.Global["123:3"] = Binding{Kind: KindText, Text: "x", Method: TextKeys, Layout: "4190419"}
+	d.Settings.Global["123:4"] = Binding{Kind: KindRun, Path: ` "C:\Windows\notepad.exe" `, Args: " a.txt ", Show: "weird"}
+	d.Settings.Global["123:5"] = Binding{Kind: KindCommand, Cmd: "  %LOCALAPPDATA%  ", Show: ShowHidden}
+	d.Settings.Global["123:6"] = Binding{Kind: KindText, Secret: true, Enc: "dpapi:AAAA", Method: TextUnicode}
+	d.Settings.FGCheckMs = 10
+	d.Settings.Popup.Position = "nowhere"
+	d.Settings.Popup.Width = 99999
+	d.Settings.Popup.Background = "red"
+	if err := validateData(d); err != nil {
+		t.Fatal(err)
+	}
+	m := d.Macros[0]
+	if m.Name != "Combo" || m.Mode != MacroTimes || m.Repeat != 1 || m.Events[0].Key != "Ctrl" || m.Events[0].Delay != 0 ||
+		m.Events[1].Key != "MouseLeft" || m.Events[2].DX != 10000 || m.Events[2].Key != "" || m.Events[4].Delay != maxMacroDelay {
+		t.Errorf("macro: %+v", m)
+	}
+	g := d.Settings.Global
+	if b := g["123:1"]; b.Keys != "" || b.MacroID != "m1" {
+		t.Errorf("macro binding: %+v", b)
+	}
+	if b := g["123:2"]; b.Method != TextUnicode || b.Layout != "" || b.After != "Enter" || b.CharDelay != maxCharDelay || b.Keys != "" {
+		t.Errorf("text: %+v", b)
+	}
+	if b := g["123:3"]; b.Layout != "4190419" {
+		t.Errorf("text keys: %+v", b)
+	}
+	if b := g["123:4"]; b.Path != `C:\Windows\notepad.exe` || b.Args != "a.txt" || b.Show != ShowNormal {
+		t.Errorf("run: %+v", b)
+	}
+	if b := g["123:5"]; b.Cmd != "%LOCALAPPDATA%" || b.Show != ShowHidden {
+		t.Errorf("command: %+v", b)
+	}
+	if d.Settings.FGCheckMs != minFGCheckMs || d.Settings.Popup.Position != "bottom-center" || d.Settings.Popup.Width != 2000 || d.Settings.Popup.Background != "#1e1f22" {
+		t.Errorf("settings: %+v", d.Settings)
+	}
+
+	bad := []Binding{
+		{Kind: KindMacro},
+		{Kind: KindMacro, MacroID: "nope"},
+		{Kind: KindText},
+		{Kind: KindText, Text: "a", Method: "telepathy"},
+		{Kind: KindText, Text: "a", Method: TextKeys, Layout: "zz"},
+		{Kind: KindText, Text: "a", After: "Ctrl+Nope"},
+		{Kind: KindText, Enc: "dpapi:AAAA"}, // secret switched off without a new text
+		{Kind: KindRun, Path: `  ""  `},
+		{Kind: KindCommand, Cmd: "   "},
+	}
+	for i, b := range bad {
+		d2 := defaultData()
+		d2.Settings.Global["123:1"] = b
+		if err := validateData(d2); err == nil {
+			t.Errorf("bad %d (%+v): no error", i, b)
+		}
+	}
+	d3 := defaultData()
+	d3.Macros = []*Macro{{ID: "m", Name: "x", Events: []MacroEvent{{Type: EvDown, Key: "NoSuchKey"}}}}
+	if validateData(d3) == nil {
+		t.Error("unknown macro key accepted")
+	}
+	d3.Macros[0].Events = []MacroEvent{{Type: "dance"}}
+	if validateData(d3) == nil {
+		t.Error("unknown macro event accepted")
+	}
+}
+
+func TestMacroUseAndOldData(t *testing.T) {
+	d := defaultData()
+	d.Macros = []*Macro{{ID: "m1", Name: "M"}}
+	d.Profiles = []*Profile{{ID: "p", Name: "P", Enabled: true, Bindings: map[string]Binding{"num:3": {Kind: KindMacro, MacroID: "m1"}}}}
+	if err := validateData(d); err != nil {
+		t.Fatal(err)
+	}
+	if u := macroUse(d, "m1"); !strings.Contains(u, "P") {
+		t.Errorf("macroUse: %q", u)
+	}
+	if macroUse(d, "m2") != "" {
+		t.Error("macroUse of an unused macro")
+	}
+	// data of 0.1 (version 2): no macros, no fgCheckMs
+	dir := t.TempDir()
+	old := `{"version":2,"profiles":[],"settings":{"global":{},"dpi":{"stages":[800],"start":0},"pollRate":1000,"chatter":{"t":45,"h":15,"g":100,"d":250},"popup":{"position":"cursor","width":240,"height":120}}}`
+	if err := os.WriteFile(dir+"/data.json", []byte(old), 0644); err != nil {
+		t.Fatal(err)
+	}
+	s := loadStore(dir)
+	if s.data.Macros == nil || s.data.Settings.FGCheckMs != defaultFGCheckMs || s.data.Settings.Popup.Position != "cursor" || s.data.Version != dataVersion {
+		t.Errorf("old data: %+v", s.data.Settings)
+	}
+}
+
+func TestSplitCommand(t *testing.T) {
+	exists := func(p string) bool { return p == `C:\Program Files\App\app.exe` || p == `C:\Program Files\App\app` }
+	cases := []struct{ in, file, args string }{
+		{`cmd /k ipconfig /all`, "cmd", "/k ipconfig /all"},
+		{`"C:\Program Files\App\app.exe" -x "y z"`, `C:\Program Files\App\app.exe`, `-x "y z"`},
+		{`C:\Program Files\App\app.exe --flag`, `C:\Program Files\App\app.exe`, "--flag"},
+		{`C:\Program Files\App\app -v`, `C:\Program Files\App\app`, "-v"},
+		{`notepad`, "notepad", ""},
+		{`  explorer   shell:startup `, "explorer", "shell:startup"},
+		{`"unterminated`, "unterminated", ""},
+	}
+	for _, c := range cases {
+		f, a := splitCommand(c.in, exists)
+		if f != c.file || a != c.args {
+			t.Errorf("%q: got %q %q, want %q %q", c.in, f, a, c.file, c.args)
+		}
+	}
+}

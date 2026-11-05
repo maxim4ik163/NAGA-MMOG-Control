@@ -3,6 +3,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -37,6 +38,20 @@ func runUI(url string) {
 	defer w.Destroy()
 	darkTitleBar(uintptr(w.Window()))
 	w.SetSize(int(900*scale), int(620*scale), webview2.HintMin)
+	// size, position and maximized state are remembered between openings
+	trackWindowState(uintptr(w.Window()), int32(900*scale), int32(620*scale))
+	// file picker for "start a program": the dialog runs on its own thread
+	// (a modal loop inside a WebView2 event handler is not allowed) and is
+	// owned by this window, so it opens on top of it.
+	_ = w.Bind("nagaPickFile", func(start, lang string) bool {
+		setLang(lang)
+		go func() {
+			p := pickFile(uintptr(w.Window()), start)
+			b, _ := json.Marshal(p)
+			w.Dispatch(func() { w.Eval("window.nagaPickResult && window.nagaPickResult(" + string(b) + ")") })
+		}()
+		return true
+	})
 	w.Navigate(url)
 	w.Run()
 }

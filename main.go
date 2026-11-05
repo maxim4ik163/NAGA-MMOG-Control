@@ -15,7 +15,7 @@ import (
 	"unsafe"
 )
 
-const appVersion = "0.1.2"
+const appVersion = "0.2.0"
 
 const (
 	mainClass = "NagaControlMain"
@@ -390,6 +390,7 @@ func main() {
 		})
 	}
 	eng.onOSD = func(c osdContent) { uiCall(func() { osdShow(c) }) }
+	eng.onError = func(s string) { uiCall(func() { notify("Naga Control", s, true) }) }
 
 	hook.run()
 	if !hook.alive.Load() {
@@ -407,7 +408,7 @@ func main() {
 	osdCreate(hinst)
 	addTray()
 	watchForeground(eng.setForeground)
-	pSetTimer.Call(hwndMain, timerFG, 2000, 0)
+	applyFGTimer()
 
 	if !startedByAutorun() {
 		openUI()
@@ -432,6 +433,16 @@ func main() {
 	if curIcon != 0 {
 		pDestroyIcon.Call(curIcon)
 	}
+}
+
+// applyFGTimer (re)starts the foreground check with the interval from the
+// settings (UI thread).
+func applyFGTimer() {
+	store.mu.Lock()
+	ms := store.data.Settings.FGCheckMs
+	store.mu.Unlock()
+	ms = clampInt(ms, minFGCheckMs, maxFGCheckMs)
+	pSetTimer.Call(hwndMain, timerFG, uintptr(ms), 0)
 }
 
 func startedByAutorun() bool {

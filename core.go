@@ -1,5 +1,7 @@
 package main
 
+import "strings"
+
 // Platform-independent decisions: which binding a slot has right now, which
 // profile is active, DPI stages and values.
 
@@ -125,4 +127,33 @@ func nextStage(kind string, cur, n int) int {
 		return (cur + 1) % n
 	}
 	return clampInt(cur, 0, n-1)
+}
+
+// splitCommand splits a Win+R command line into what to start and its
+// arguments: a quoted first part, the longest unquoted prefix that is an
+// existing file or folder (paths with spaces), or the first word.
+func splitCommand(cmd string, exists func(string) bool) (string, string) {
+	cmd = strings.TrimSpace(cmd)
+	if strings.HasPrefix(cmd, `"`) {
+		if i := strings.Index(cmd[1:], `"`); i >= 0 {
+			return cmd[1 : i+1], strings.TrimSpace(cmd[i+2:])
+		}
+		return strings.Trim(cmd, `"`), ""
+	}
+	sp := []int{}
+	for i, c := range cmd {
+		if c == ' ' {
+			sp = append(sp, i)
+		}
+	}
+	for k := len(sp) - 1; k >= 0; k-- {
+		head := cmd[:sp[k]]
+		if strings.ContainsAny(head, `\/`) && exists(head) {
+			return head, strings.TrimSpace(cmd[sp[k]:])
+		}
+	}
+	if len(sp) > 0 {
+		return cmd[:sp[0]], strings.TrimSpace(cmd[sp[0]:])
+	}
+	return cmd, ""
 }
